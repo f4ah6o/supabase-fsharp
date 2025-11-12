@@ -1,6 +1,7 @@
 module ContactApp.Models
 open System.ComponentModel.DataAnnotations
 open Supabase.Postgrest.Attributes
+open Supabase.Postgrest.Models
 
 
 type Contact = {
@@ -32,6 +33,7 @@ type ContactDTO = {
 // Supabase table model
 [<Table("contacts")>]
 type ContactTable() =
+    inherit BaseModel()
     [<PrimaryKey("id", false)>]
     member val id = 0 with get, set
     [<Column("first")>]
