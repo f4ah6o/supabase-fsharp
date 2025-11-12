@@ -37,9 +37,8 @@ module AsyncExtensions =
 [<AutoOpen>]
 module ClientAsyncExtensions =
     open Supabase
-    open Supabase.Gotrue
-    open Supabase.Realtime
-    open Supabase.Storage
+    open Supabase.Gotrue.Interfaces
+    open Supabase.Realtime.Interfaces
 
     type Client with
         /// <summary>
@@ -48,7 +47,7 @@ module ClientAsyncExtensions =
         member this.InitializeAsyncF() =
             this.InitializeAsync() |> Async.AwaitTask
 
-    type IGotrueClient<'TUser, 'TSession> with
+    type IGotrueClient<'TUser, 'TSession when 'TUser :> Supabase.Gotrue.User and 'TSession :> Supabase.Gotrue.Session> with
         /// <summary>
         /// Retrieves the session using F# async
         /// </summary>
@@ -73,7 +72,7 @@ module ClientAsyncExtensions =
         member this.SignOutAsyncF() =
             this.SignOut() |> Async.AwaitTask
 
-    type IRealtimeClient<'TSocket, 'TChannel> with
+    type IRealtimeClient<'TSocket, 'TChannel when 'TSocket :> IRealtimeSocket and 'TChannel :> IRealtimeChannel> with
         /// <summary>
         /// Connects to realtime using F# async
         /// </summary>
@@ -84,4 +83,6 @@ module ClientAsyncExtensions =
         /// Disconnects from realtime using F# async
         /// </summary>
         member this.DisconnectAsyncF() =
-            this.DisconnectAsync() |> Async.AwaitTask
+            async {
+                this.Disconnect() |> ignore
+            }

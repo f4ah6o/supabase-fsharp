@@ -15,36 +15,36 @@ module Supabase =
     /// Creates a new Supabase client
     /// </summary>
     let create url key options =
-        new Client(url, key, options)
+        new Supabase.Client(url, key, options)
 
     /// <summary>
     /// Creates a new Supabase client with default options
     /// </summary>
     let createDefault url key =
-        new Client(url, key)
+        new Supabase.Client(url, key)
 
     /// <summary>
     /// Initializes a Supabase client
     /// </summary>
-    let initialize (client: Client) =
+    let initialize (client: Supabase.Client) =
         client.InitializeAsyncF()
 
     /// <summary>
     /// Gets a table reference from the client
     /// </summary>
-    let from<'T when 'T :> BaseModel and 'T : (new : unit -> 'T)> (client: Client) =
+    let from<'T when 'T :> BaseModel and 'T : (new : unit -> 'T)> (client: Supabase.Client) =
         client.From<'T>()
 
     /// <summary>
     /// Calls a remote procedure
     /// </summary>
-    let rpc procedureName parameters (client: Client) =
+    let rpc procedureName parameters (client: Supabase.Client) =
         client.Rpc(procedureName, parameters) |> Async.AwaitTask
 
     /// <summary>
     /// Calls a remote procedure with a typed response
     /// </summary>
-    let rpcTyped<'T> procedureName parameters (client: Client) =
+    let rpcTyped<'T> procedureName parameters (client: Supabase.Client) =
         client.Rpc<'T>(procedureName, parameters) |> Async.AwaitTask
 
 /// <summary>
@@ -56,68 +56,68 @@ module Auth =
     /// <summary>
     /// Signs in with email and password
     /// </summary>
-    let signIn email password (client: Client) = async {
+    let signIn email password (client: Supabase.Client) = async {
         return! client.Auth.SignInAsyncF(email, password)
     }
 
     /// <summary>
     /// Signs up with email and password
     /// </summary>
-    let signUp email password (client: Client) = async {
+    let signUp email password (client: Supabase.Client) = async {
         return! client.Auth.SignUpAsyncF(email, password)
     }
 
     /// <summary>
     /// Signs up with email, password, and additional options
     /// </summary>
-    let signUpWithOptions email password options (client: Client) = async {
+    let signUpWithOptions email password options (client: Supabase.Client) = async {
         return! client.Auth.SignUp(email, password, options) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Signs out the current user
     /// </summary>
-    let signOut (client: Client) = async {
+    let signOut (client: Supabase.Client) = async {
         do! client.Auth.SignOutAsyncF()
     }
 
     /// <summary>
     /// Gets the current session as an option
     /// </summary>
-    let currentSession (client: Client) =
+    let currentSession (client: Supabase.Client) =
         ofObj client.Auth.CurrentSession
 
     /// <summary>
     /// Gets the current user as an option
     /// </summary>
-    let currentUser (client: Client) =
+    let currentUser (client: Supabase.Client) =
         ofObj client.Auth.CurrentUser
 
     /// <summary>
     /// Retrieves the current session
     /// </summary>
-    let retrieveSession (client: Client) = async {
+    let retrieveSession (client: Supabase.Client) = async {
         return! client.Auth.RetrieveSessionAsyncF()
     }
 
     /// <summary>
     /// Refreshes the current session
     /// </summary>
-    let refreshSession (client: Client) = async {
+    let refreshSession (client: Supabase.Client) = async {
         return! client.Auth.RefreshSession() |> Async.AwaitTask
     }
 
     /// <summary>
     /// Sends a password reset email
     /// </summary>
-    let resetPasswordForEmail email (client: Client) = async {
+    let resetPasswordForEmail (email: string) (client: Supabase.Client) = async {
         return! client.Auth.ResetPasswordForEmail(email) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Updates the current user
     /// </summary>
-    let updateUser attributes (client: Client) = async {
+    let updateUser attributes (client: Supabase.Client) = async {
         return! client.Auth.Update(attributes) |> Async.AwaitTask
     }
 
@@ -130,27 +130,28 @@ module Realtime =
     /// <summary>
     /// Connects to Realtime
     /// </summary>
-    let connect (client: Client) = async {
-        do! client.Realtime.ConnectAsyncF()
+    let connect (client: Supabase.Client) = async {
+        let! _ = client.Realtime.ConnectAsyncF()
+        return ()
     }
 
     /// <summary>
     /// Disconnects from Realtime
     /// </summary>
-    let disconnect (client: Client) = async {
+    let disconnect (client: Supabase.Client) = async {
         do! client.Realtime.DisconnectAsyncF()
     }
 
     /// <summary>
     /// Sets the auth token for Realtime
     /// </summary>
-    let setAuth token (client: Client) =
+    let setAuth token (client: Supabase.Client) =
         client.Realtime.SetAuth(token)
 
     /// <summary>
     /// Gets a channel by name
     /// </summary>
-    let channel name (client: Client) =
+    let channel name (client: Supabase.Client) =
         client.Realtime.Channel(name)
 
 /// <summary>
@@ -162,37 +163,40 @@ module Storage =
     /// <summary>
     /// Gets a storage bucket
     /// </summary>
-    let bucket bucketId (client: Client) =
+    let bucket bucketId (client: Supabase.Client) =
         client.Storage.From(bucketId)
 
     /// <summary>
     /// Uploads a file to storage
     /// </summary>
-    let upload bucketId path fileBytes (client: Client) = async {
+    let upload (bucketId: string) (path: string) (fileBytes: byte[]) (client: Supabase.Client) = async {
         let bucket = client.Storage.From(bucketId)
-        return! bucket.Upload(path, fileBytes) |> Async.AwaitTask
+        return! bucket.Upload(fileBytes, path) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Downloads a file from storage
     /// </summary>
-    let download bucketId path (client: Client) = async {
+    let download (bucketId: string) (path: string) (client: Supabase.Client) = async {
         let bucket = client.Storage.From(bucketId)
-        return! bucket.Download(path) |> Async.AwaitTask
+        return!
+            bucket.Download(path, ?transformOptions = None, ?onProgress = None)
+            |> Async.AwaitTask
     }
 
     /// <summary>
     /// Deletes files from storage
     /// </summary>
-    let delete bucketId paths (client: Client) = async {
+    let delete (bucketId: string) (paths: string list) (client: Supabase.Client) = async {
         let bucket = client.Storage.From(bucketId)
-        return! bucket.Remove(paths) |> Async.AwaitTask
+        let dotnetList = System.Collections.Generic.List<string>(paths)
+        return! bucket.Remove(dotnetList) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Lists files in a bucket
     /// </summary>
-    let list bucketId path (client: Client) = async {
+    let list (bucketId: string) (path: string) (client: Supabase.Client) = async {
         let bucket = client.Storage.From(bucketId)
         return! bucket.List(path) |> Async.AwaitTask
     }
@@ -200,7 +204,7 @@ module Storage =
     /// <summary>
     /// Gets a public URL for a file
     /// </summary>
-    let publicUrl bucketId path (client: Client) =
+    let publicUrl bucketId path (client: Supabase.Client) =
         let bucket = client.Storage.From(bucketId)
         bucket.GetPublicUrl(path)
 
@@ -213,27 +217,27 @@ module Functions =
     /// <summary>
     /// Invokes an edge function
     /// </summary>
-    let invoke functionName (client: Client) = async {
+    let invoke functionName (client: Supabase.Client) = async {
         return! client.Functions.Invoke(functionName) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Invokes an edge function with parameters
     /// </summary>
-    let invokeWith functionName parameters (client: Client) = async {
+    let invokeWith functionName parameters (client: Supabase.Client) = async {
         return! client.Functions.Invoke(functionName, parameters) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Invokes an edge function with a typed response
     /// </summary>
-    let invokeTyped<'T> functionName (client: Client) = async {
+    let invokeTyped<'T when 'T : not struct> functionName (client: Supabase.Client) = async {
         return! client.Functions.Invoke<'T>(functionName) |> Async.AwaitTask
     }
 
     /// <summary>
     /// Invokes an edge function with parameters and a typed response
     /// </summary>
-    let invokeTypedWith<'T> functionName parameters (client: Client) = async {
+    let invokeTypedWith<'T when 'T : not struct> functionName parameters (client: Supabase.Client) = async {
         return! client.Functions.Invoke<'T>(functionName, parameters) |> Async.AwaitTask
     }

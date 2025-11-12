@@ -3,6 +3,8 @@ namespace Supabase.FSharp
 open System
 open Supabase
 open Supabase.Gotrue
+open Supabase.Gotrue.Interfaces
+open Supabase.Storage
 
 /// <summary>
 /// Computation expression builder for configuring Supabase options
@@ -10,6 +12,7 @@ open Supabase.Gotrue
 type SupabaseOptionsBuilder() =
 
     member _.Yield(_) = SupabaseOptions()
+    member _.Zero() = SupabaseOptions()
 
     /// <summary>
     /// Sets the database schema
@@ -74,18 +77,18 @@ module SupabaseBuilders =
     /// Creates a Supabase client with the given URL and key
     /// </summary>
     let createClient url key (options: SupabaseOptions) =
-        new Client(url, key, options)
+        new Supabase.Client(url, key, options)
 
     /// <summary>
     /// Creates a Supabase client with URL and key only
     /// </summary>
     let createSimpleClient url key =
-        new Client(url, key)
+        new Supabase.Client(url, key)
 
     /// <summary>
     /// Initializes a Supabase client asynchronously
     /// </summary>
-    let initializeClient (client: Client) = async {
+    let initializeClient (client: Supabase.Client) = async {
         let! _ = client.InitializeAsyncF()
         return client
     }
