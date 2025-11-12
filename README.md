@@ -1,83 +1,366 @@
-# Supabase.Csharp
+# Supabase.FSharp
 
- [![Build and Test](https://github.com/supabase-community/supabase-csharp/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/supabase-community/supabase-csharp/actions/workflows/build-and-test.yml)
- [![NuGet](https://img.shields.io/nuget/vpre/Supabase)](https://www.nuget.com/packages/Supabase/)
-
-Documentation can be found [below](#getting-started), on
-the [Supabase Developer Documentation](https://supabase.com/docs/reference/csharp/introduction) and additionally in
-the [Generated API Docs](https://supabase-community.github.io/supabase-csharp/api/Supabase.Client.html).
-
-[**CHANGELOG is available in the repository root.
-**](https://github.com/supabase-community/supabase-csharp/blob/master/CHANGELOG.md)
-
-## [NOTICE FOR v1.0.0]
-
-- The `supabase-csharp` Nuget package has been renamed to `Supabase` and a depreciation notice set to encourage
-  adoption.
-- Almost all APIs stay the same when migrating from v0.16.x _except_ the change in namespace from `Postgrest`
-  to `Supabase.Postgrest`. Some minor refactoring will be required in the codebase.
-- The assembly name has been changed from `supabase` to `Supabase`.
+F# extensions and idiomatic wrappers for the [Supabase C# client](https://github.com/supabase-community/supabase-csharp).
 
 ## Features
 
-- [x] Integration with [Supabase.Realtime](https://github.com/supabase-community/realtime-csharp)
-  - Realtime listeners for database changes
-- [x] Integration with [Postgrest](https://github.com/supabase-community/postgrest-csharp)
-  - Access your database using a REST API generated from your schema & database functions
-- [x] Integration with [Gotrue](https://github.com/supabase-community/gotrue-csharp)
-  - User authentication, including OAuth, email/password, and native sign-in
-- [x] Integration with [Supabase Storage](https://github.com/supabase-community/storage-csharp)
-  - Store files in S3 with additional managed metadata
-- [x] Integration with [Supabase Edge Functions](https://github.com/supabase-community/functions-csharp)
-  - Run serverless functions on the edge
-- [x] **F# Support** - Idiomatic F# extensions and APIs
-  - F# Async workflow support
-  - Option type conversions for nullable values
-  - Computation expressions for configuration
-  - Pipeline-friendly module functions
-- [x] [Nuget Release](https://www.nuget.org/packages/supabase-csharp)
+- **F# Async Integration** - Seamless conversion between Task and F# Async workflows
+- **Option Type Support** - Automatic conversion of nullable types to F# options
+- **Computation Expressions** - Idiomatic builders for configuration and workflows
+- **Pipeline-Friendly Functions** - Module functions designed for F# pipelines
+- **Type Extensions** - F#-friendly extensions for Supabase types
 
-## Quickstart
+## Installation
 
-1. To get started, create a new project in the [Supabase Admin Panel](https://app.supabase.io).
-2. Grab your Supabase URL and Supabase Public Key from the Admin Panel (Settings -> API Keys).
-3. Initialize the client!
+```bash
+dotnet add package Supabase.FSharp
+```
 
-_Reminder: `supabase-csharp` has some APIs that require the `service_key` rather than the `public_key` (for instance:
-the administration of users, bypassing database roles, etc.). If you are using
-the `service_key` **be sure it is not exposed client side.** Additionally, if you need to use both a service account and
-a public/user account, please do so using a separate client instance for each._
+## Quick Start
 
-## Documentation
+### Basic Client Setup
 
-- [Getting Started](https://github.com/supabase-community/supabase-csharp/wiki#getting-started)
-- [**F# Guide**](Documentation/FSharp.md) - Complete guide for F# developers
-- [Unity](https://github.com/supabase-community/supabase-csharp/wiki/Unity)
-- [Desktop/Mobile Clients (e.g. Xamarin, MAUI, etc.)](https://github.com/supabase-community/supabase-csharp/wiki/Desktop-Clients)
-- [Server-Side Applications](https://github.com/supabase-community/supabase-csharp/wiki/Server-Side-Applications)
-- [Release Notes/Breaking Changes](https://github.com/supabase-community/supabase-csharp/wiki/Release-Notes)
-- [Using the Client](https://github.com/supabase-community/supabase-csharp/wiki#using-the-client)
-- [Examples](https://github.com/supabase-community/supabase-csharp/wiki/Examples)
+```fsharp
+open Supabase.FSharp
 
-### Specific Features
+// Create client with options using computation expression
+let options =
+    supabaseOptions {
+        schema "public"
+        autoRefreshToken true
+        autoConnectRealtime false
+    }
 
-- [Offline Support](https://github.com/supabase-community/supabase-csharp/wiki/Authorization-with-Gotrue#offline-support)
-- [Refresh Token Thread](https://github.com/supabase-community/supabase-csharp/wiki/Authorization-with-Gotrue#updated-refresh-token-handling)
-- [Native Sign in with Apple]([Documentation/NativeSignInWithApple.md](https://github.com/supabase-community/supabase-csharp/wiki/Authorization-with-Gotrue#native-sign-in-with-apple))
+let url = "YOUR_SUPABASE_URL"
+let key = "YOUR_SUPABASE_KEY"
 
-### Troubleshooting
+// Create and initialize client
+let client = async {
+    let clientInterface = Supabase.create url key options
+    let client = clientInterface :?> Supabase.Client
+    do! Supabase.initialize client
+    return client
+}
+```
 
-- [Troubleshooting](https://github.com/supabase-community/supabase-csharp/wiki/Troubleshooting)
-- [Discussion Forum](https://github.com/supabase-community/supabase-csharp/discussions)
+### Authentication
 
-## Package made possible through the efforts of
+```fsharp
+open Supabase.FSharp
 
-<a href="https://github.com/supabase-community/supabase-csharp/graphs/contributors">
-  <img src="https://contrib-generator.fly.dev/repo/generate?repo=supabase-community/supabase-csharp,supabase-community/postgrest-csharp,supabase-community/realtime-csharp,supabase-community/gotrue-csharp&size=64&strokeWidth=4&strokeColor=3ecf8e&padding=12"/>
-</a>
+let authenticate (client: Supabase.Client) = async {
+    // Sign up
+    let! response = Auth.signUp "user@example.com" "password123" client
 
-Join the ranks! See a problem? Help fix it!
+    // Get current user as Option
+    match Auth.currentUser client with
+    | Some user ->
+        printfn "User ID: %s" user.Id
+        // Access email safely with Option extension
+        match user.EmailOption with
+        | Some email -> printfn "Email: %s" email
+        | None -> printfn "No email set"
+    | None ->
+        printfn "No user logged in"
+
+    // Sign out
+    do! Auth.signOut client
+}
+```
+
+### Database Operations
+
+```fsharp
+open Supabase.FSharp
+open Supabase.Postgrest.Models
+
+[<Table("movies")>]
+type Movie() =
+    inherit BaseModel()
+
+    [<PrimaryKey("id")>]
+    member val Id = 0 with get, set
+
+    [<Column("name")>]
+    member val Name = "" with get, set
+
+let queryMovies (client: Supabase.Client) = async {
+    let table = Supabase.from<Movie> client
+    let! response = table.Get() |> Async.AwaitTask
+
+    for movie in response.Models do
+        printfn "Movie: %s (ID: %d)" movie.Name movie.Id
+}
+```
+
+### Realtime
+
+```fsharp
+open Supabase.FSharp
+
+let setupRealtime (client: Supabase.Client) = async {
+    // Connect to realtime
+    do! Realtime.connect client
+
+    // Get a channel
+    let channel = Realtime.channel "public:movies" client
+
+    // Disconnect when done
+    do! Realtime.disconnect client
+}
+```
+
+### Storage
+
+```fsharp
+open Supabase.FSharp
+
+let storageOperations (client: Supabase.Client) = async {
+    let bucketId = "my-bucket"
+    let filePath = "example.txt"
+    let fileContent = System.Text.Encoding.UTF8.GetBytes("Hello from F#!")
+
+    // Upload file
+    let! uploadResult = Storage.upload bucketId filePath fileContent client
+
+    // Get public URL
+    let publicUrl = Storage.publicUrl bucketId filePath client
+    printfn "File URL: %s" publicUrl
+
+    // List files
+    let! files = Storage.list bucketId "" client
+    printfn "Found %d files" files.Count
+
+    // Download file
+    let! downloadedBytes = Storage.download bucketId filePath client
+
+    // Delete files
+    do! Storage.delete bucketId [filePath] client
+}
+```
+
+### Edge Functions
+
+```fsharp
+open Supabase.FSharp
+
+let callFunction (client: Supabase.Client) = async {
+    // Invoke function
+    let! result = Functions.invoke "hello-world" client
+
+    // Invoke with parameters
+    let parameters = {| name = "F# Developer" |}
+    let! result = Functions.invokeWith "greet" parameters client
+
+    // Invoke with typed response
+    let! typedResult = Functions.invokeTyped<MyResponseType> "my-function" client
+}
+```
+
+### Remote Procedure Calls (RPC)
+
+```fsharp
+open Supabase.FSharp
+
+let callRPC (client: Supabase.Client) = async {
+    // Call database function
+    let parameters = {| userId = 123 |}
+    let! result = Supabase.rpc "my_function" parameters client
+
+    // Call with typed response
+    let! typedResult = Supabase.rpcTyped<MyType> "my_function" parameters client
+}
+```
+
+## Module Functions
+
+The library provides pipeline-friendly module functions:
+
+### `Supabase` Module
+
+- `create` - Create a new Supabase client
+- `createDefault` - Create client with default options
+- `initialize` - Initialize the client
+- `from` - Get a table reference
+- `rpc` - Call a remote procedure
+- `rpcTyped` - Call a remote procedure with typed response
+
+### `Auth` Module
+
+- `signIn` - Sign in with email and password
+- `signUp` - Sign up a new user
+- `signOut` - Sign out the current user
+- `currentSession` - Get current session as Option
+- `currentUser` - Get current user as Option
+- `retrieveSession` - Retrieve the session
+- `refreshSession` - Refresh the session
+- `resetPasswordForEmail` - Send password reset email
+- `updateUser` - Update user attributes
+
+### `Realtime` Module
+
+- `connect` - Connect to Realtime
+- `disconnect` - Disconnect from Realtime
+- `setAuth` - Set auth token
+- `channel` - Get a channel by name
+
+### `Storage` Module
+
+- `bucket` - Get a storage bucket
+- `upload` - Upload a file
+- `download` - Download a file
+- `delete` - Delete files
+- `list` - List files in a bucket
+- `publicUrl` - Get public URL for a file
+
+### `Functions` Module
+
+- `invoke` - Invoke an edge function
+- `invokeWith` - Invoke with parameters
+- `invokeTyped` - Invoke with typed response
+- `invokeTypedWith` - Invoke with parameters and typed response
+
+## Computation Expressions
+
+### Supabase Options Builder
+
+```fsharp
+let options =
+    supabaseOptions {
+        schema "public"
+        autoRefreshToken true
+        autoConnectRealtime false
+        header "X-Custom-Header" "value"
+    }
+```
+
+### Auth Workflow
+
+```fsharp
+let authFlow (client: Supabase.Client) =
+    auth {
+        let! session = Auth.retrieveSession client
+
+        match ofObj session with
+        | Some s ->
+            match s.AccessTokenOption with
+            | Some token -> return Ok token
+            | None -> return Error "No token"
+        | None ->
+            return Error "No session"
+    }
+```
+
+## Option Type Extensions
+
+The library automatically converts nullable types to F# options:
+
+```fsharp
+open Supabase.FSharp
+
+// Session extensions
+let session = client.Auth.CurrentSession
+session.AccessTokenOption  // string option
+session.RefreshTokenOption // string option
+session.UserOption         // User option
+
+// User extensions
+let user = client.Auth.CurrentUser
+user.EmailOption          // string option
+user.PhoneOption          // string option
+
+// Helper functions
+let maybeValue = ofObj someNullableReference  // 'T option
+let maybeInt = ofNullable someNullableInt     // int option
+```
+
+## Async Extensions
+
+Seamless conversion between Task and Async:
+
+```fsharp
+open Supabase.FSharp
+
+// Task to Async
+let task = client.InitializeAsync()
+let asyncOp = task.AsAsyncResult()
+
+// Async to Task
+let async = async { return 42 }
+let task = async.AsTask()
+
+// F#-friendly async methods
+let! _ = client.InitializeAsyncF()
+let! session = client.Auth.SignInAsyncF("email", "password")
+let! _ = client.Realtime.ConnectAsyncF()
+```
+
+## Pipeline Style
+
+All functions are designed to work naturally with F# pipelines:
+
+```fsharp
+open Supabase.FSharp
+
+let workflow = async {
+    let! client =
+        Supabase.create url key options
+        |> fun c -> c :?> Supabase.Client
+        |> Supabase.initialize
+
+    // Pipeline-style auth
+    let currentUser =
+        client
+        |> Auth.currentUser
+        |> Option.map (fun u -> u.EmailOption)
+
+    // Pipeline-style queries
+    let! movies =
+        client
+        |> Supabase.from<Movie>
+        |> fun table -> table.Get()
+        |> Async.AwaitTask
+
+    return movies
+}
+```
+
+## Examples
+
+See the [Examples](Examples/) folder for complete working examples:
+
+- **[SupabaseExample.FSharp](Examples/SupabaseExample.FSharp)** - Comprehensive examples of all features
+- **[ContactApp](Examples/ContactApp)** - Real-world CRUD application using Oxpecker web framework
+
+## Requirements
+
+- .NET 9.0 or later
+- F# 9.0 or later
+
+## Dependencies
+
+This library wraps the official Supabase C# client libraries:
+
+- [Supabase](https://www.nuget.org/packages/Supabase) (v1.1.1)
+- [Supabase.Gotrue](https://www.nuget.org/packages/Supabase.Gotrue) (v6.0.3)
+- [Supabase.Postgrest](https://www.nuget.org/packages/Supabase.Postgrest) (v4.1.0)
+- [Supabase.Realtime](https://www.nuget.org/packages/Supabase.Realtime) (v7.2.0)
+- [Supabase.Storage](https://www.nuget.org/packages/Supabase.Storage) (v2.0.2)
 
 ## Contributing
 
-We are more than happy to have contributions! Please submit a PR.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Credits
+
+This library is built on top of the excellent [Supabase C# client](https://github.com/supabase-community/supabase-csharp) by the Supabase community.
+
+## Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [Supabase C# Documentation](https://supabase.com/docs/reference/csharp/introduction)
+- [F# Documentation](https://learn.microsoft.com/en-us/dotnet/fsharp/)
