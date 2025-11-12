@@ -106,20 +106,21 @@ let deleteContact id: EndpointHandler =
                 ()
         }
 
-let deleteContacts (ctx: HttpContext) =
-    task {
-        match ctx.TryGetFormValues "selected_contact_ids" with
-        | Some ids ->
-            for id in ids do
-                do! id |> int |> ContactService.delete
-            flash "Deleted Contacts!" ctx
-        | None ->
-            ()
-        let page = 1
-        let! result = ContactService.all page
-        let resultArray = result |> Seq.toArray
-        return! ctx |> writeHtml (index.html "" page resultArray archiver)
-    }
+let deleteContacts: EndpointHandler =
+    fun ctx ->
+        task {
+            match ctx.TryGetFormValues "selected_contact_ids" with
+            | Some ids ->
+                for id in ids do
+                    do! id |> int |> ContactService.delete
+                flash "Deleted Contacts!" ctx
+            | None ->
+                ()
+            let page = 1
+            let! result = ContactService.all page
+            let resultArray = result |> Seq.toArray
+            return! ctx |> writeHtml (index.html "" page resultArray archiver)
+        }
 
 let validateEmail id: EndpointHandler =
     fun ctx ->

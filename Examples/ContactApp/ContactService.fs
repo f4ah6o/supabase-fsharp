@@ -19,8 +19,10 @@ let initializeSupabase (url: string) (key: string) = async {
             autoConnectRealtime false
         }
 
-    let client = Supabase.create url key options
-    let! initializedClient = Supabase.initialize client
+    let clientInterface = Supabase.create url key options
+    let client = clientInterface :?> Client
+    let! initializedClientInterface = Supabase.initialize client
+    let initializedClient = initializedClientInterface :?> Client
     supabaseClient <- Some initializedClient
     return initializedClient
 }
