@@ -12,7 +12,7 @@ let html (content: HtmlElement) (ctx: HttpContext) =
             script(src="https://unpkg.com/htmx.org@1.9.10") { "" }
             link(rel="stylesheet", href="/site.css")
         }
-        body(style="width: 800px; margin: 0 auto", hxBoost) {
+        body(style="width: 800px; margin: 0 auto", hxBoost=true) {
             header() {
                 h1() {
                     p() { raw "Contact" }

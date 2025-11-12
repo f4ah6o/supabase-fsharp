@@ -72,13 +72,12 @@ let errorHandler (ctx: HttpContext) (next: RequestDelegate) =
             ctx.SetStatusCode StatusCodes.Status500InternalServerError
             return! ctx.WriteHtmlView(errorView 500 (string ex))
     }
-    :> Task
 
 let configureApp (appBuilder: IApplicationBuilder) =
     appBuilder
         .UseStaticFiles()
         .UseRouting()
-        .Use(errorHandler)
+        .Use(fun ctx next -> errorHandler ctx next :> Task)
         .UseOxpecker(endpoints)
         .Run(notFoundHandler)
 
