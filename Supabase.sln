@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.2.32519.379
+ VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F94175FC-DE2B-4DBC-9C79-2A97B8489412}"
 	ProjectSection(SolutionItems) = preProject
@@ -12,10 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Supabase", "Supabase\Supabase.csproj", "{FAE80407-C121-47A3-9304-D39FA828E9F1}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SupabaseTests", "SupabaseTests\SupabaseTests.csproj", "{28EE4F80-74AA-46F6-B15E-27C30310401A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{43FFFE0C-91D2-43AB-913F-B3824702AE49}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{5B805377-7615-441C-86B1-4BE203B0289B}"
@@ -24,10 +20,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\release.yml = .github\workflows\release.yml
 		.github\workflows\build-and-test.yml = .github\workflows\build-and-test.yml
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{E407C761-AA9C-423C-AD1C-7EE687D3CAB9}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SupabaseExample", "Examples\SupabaseExample\SupabaseExample.csproj", "{F73BCB1B-1EEE-41FA-B7A7-C655F391A26D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{F7E6F0F9-19B4-403B-A5C8-36D43CDC6B5F}"
 EndProject
@@ -43,18 +35,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FAE80407-C121-47A3-9304-D39FA828E9F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FAE80407-C121-47A3-9304-D39FA828E9F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FAE80407-C121-47A3-9304-D39FA828E9F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FAE80407-C121-47A3-9304-D39FA828E9F1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{28EE4F80-74AA-46F6-B15E-27C30310401A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28EE4F80-74AA-46F6-B15E-27C30310401A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28EE4F80-74AA-46F6-B15E-27C30310401A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28EE4F80-74AA-46F6-B15E-27C30310401A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F73BCB1B-1EEE-41FA-B7A7-C655F391A26D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F73BCB1B-1EEE-41FA-B7A7-C655F391A26D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F73BCB1B-1EEE-41FA-B7A7-C655F391A26D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F73BCB1B-1EEE-41FA-B7A7-C655F391A26D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8A7E8C9D-4B5E-4F7A-9C8D-1E2F3A4B5C6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8A7E8C9D-4B5E-4F7A-9C8D-1E2F3A4B5C6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A7E8C9D-4B5E-4F7A-9C8D-1E2F3A4B5C6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -74,7 +54,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{43FFFE0C-91D2-43AB-913F-B3824702AE49} = {F94175FC-DE2B-4DBC-9C79-2A97B8489412}
 		{5B805377-7615-441C-86B1-4BE203B0289B} = {43FFFE0C-91D2-43AB-913F-B3824702AE49}
-		{F73BCB1B-1EEE-41FA-B7A7-C655F391A26D} = {F7E6F0F9-19B4-403B-A5C8-36D43CDC6B5F}
 		{9B8F9D0E-5C6F-5G8B-0D9E-2F3G4B5C6D7E} = {F7E6F0F9-19B4-403B-A5C8-36D43CDC6B5F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
