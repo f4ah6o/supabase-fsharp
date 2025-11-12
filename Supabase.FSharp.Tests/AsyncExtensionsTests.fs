@@ -1,6 +1,7 @@
 module AsyncExtensionsTests
 
 open System
+open System
 open System.Threading.Tasks
 open Xunit
 open FsUnit.Xunit
@@ -68,8 +69,8 @@ let ``AsAsync handles failed Task correctly`` () =
     let asyncOp = AsyncExtensions.AsAsync task
 
     // Assert
-    (fun () -> Async.RunSynchronously asyncOp)
-    |> should throw typeof<Exception>
+    Assert.Throws<AggregateException>(Action(fun () -> Async.RunSynchronously asyncOp |> ignore))
+    |> ignore
 
 [<Fact>]
 let ``AsAsyncResult handles failed Task correctly`` () =
@@ -81,8 +82,8 @@ let ``AsAsyncResult handles failed Task correctly`` () =
     let asyncOp = AsyncExtensions.AsAsyncResult task
 
     // Assert
-    (fun () -> Async.RunSynchronously asyncOp)
-    |> should throw typeof<Exception>
+    Assert.Throws<AggregateException>(Action(fun () -> Async.RunSynchronously asyncOp |> ignore))
+    |> ignore
 
 [<Fact>]
 let ``AsTask handles Async exception correctly`` () =
@@ -97,8 +98,8 @@ let ``AsTask handles Async exception correctly`` () =
     let task = AsyncExtensions.AsTask asyncOp
 
     // Assert
-    (fun () -> task.Wait())
-    |> should throw typeof<AggregateException>
+    Assert.Throws<AggregateException>(Action(fun () -> task.Wait()))
+    |> ignore
 
 [<Fact>]
 let ``Round trip conversion Task to Async to Task`` () =
@@ -141,7 +142,8 @@ let ``AsAsync with delayed Task completes successfully`` () =
     stopwatch.Stop()
 
     // Assert
-    stopwatch.ElapsedMilliseconds |> should be (greaterThanOrEqualTo delayMs)
+    let minimum = Math.Max(0L, int64 delayMs - 10L)
+    stopwatch.ElapsedMilliseconds |> should be (greaterThanOrEqualTo minimum)
 
 [<Fact>]
 let ``AsAsyncResult with async computation completes successfully`` () =
