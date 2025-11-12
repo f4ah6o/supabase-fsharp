@@ -4,6 +4,7 @@ open System
 open Xunit
 open FsUnit.Xunit
 open Supabase
+open Supabase.Interfaces
 open Supabase.FSharp
 
 // Test models for Postgrest
@@ -22,10 +23,10 @@ let ``Supabase.create creates client with options`` () =
     }
 
     // Act
-    let client = Supabase.create url key options
+    let client = Supabase.create url key options :?> Supabase.Client
 
     // Assert
-    client |> should be instanceOfType<Client>
+    client |> should be instanceOfType<Supabase.Client>
     client |> should not' (equal null)
 
 [<Fact>]
@@ -35,10 +36,10 @@ let ``Supabase.createDefault creates client without options`` () =
     let key = "test-key"
 
     // Act
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Assert
-    client |> should be instanceOfType<Client>
+    client |> should be instanceOfType<Supabase.Client>
     client |> should not' (equal null)
 
 [<Fact>]
@@ -46,7 +47,7 @@ let ``Supabase.from returns table reference`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act
     let table = Supabase.from<TestModel> client
@@ -69,7 +70,7 @@ let ``Supabase functions can be pipelined`` () =
         |> Supabase.create url key
 
     // Assert
-    client |> should be instanceOfType<Client>
+    client |> should be instanceOfType<Supabase.Client>
 
 [<Fact>]
 let ``Supabase.create with different URLs creates different clients`` () =
@@ -91,7 +92,7 @@ let ``Auth.currentSession returns option type`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act
     let session = Auth.currentSession client
@@ -105,7 +106,7 @@ let ``Auth.currentUser returns option type`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act
     let user = Auth.currentUser client
@@ -119,7 +120,7 @@ let ``Realtime.setAuth accepts token and client`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
     let token = "test-token"
 
     // Act & Assert - Should not throw
@@ -130,7 +131,7 @@ let ``Realtime.channel returns channel`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
     let channelName = "test-channel"
 
     // Act
@@ -144,7 +145,7 @@ let ``Storage.bucket returns bucket reference`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
     let bucketId = "test-bucket"
 
     // Act
@@ -158,7 +159,7 @@ let ``Storage.publicUrl returns URL string`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
     let bucketId = "test-bucket"
     let path = "test/file.txt"
 
@@ -179,7 +180,7 @@ let ``Storage functions can be pipelined`` () =
 
     // Act
     let publicUrl =
-        Supabase.createDefault url key
+        Supabase.createDefault url key :?> Supabase.Client
         |> Storage.publicUrl bucketId path
 
     // Assert
@@ -198,8 +199,8 @@ let ``Multiple clients can be created independently`` () =
 
     // Assert
     client1 |> should not' (equal client2)
-    client1 |> should be instanceOfType<Client>
-    client2 |> should be instanceOfType<Client>
+    client1 |> should be instanceOfType<Supabase.Client>
+    client2 |> should be instanceOfType<Supabase.Client>
 
 [<Fact>]
 let ``Auth module functions accept client as last parameter for pipelining`` () =
@@ -208,7 +209,7 @@ let ``Auth module functions accept client as last parameter for pipelining`` () 
     let key = "test-key"
 
     // Act - This should compile, demonstrating pipeline compatibility
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
     let session = client |> Auth.currentSession
     let user = client |> Auth.currentUser
 
@@ -224,7 +225,7 @@ let ``Realtime module functions accept client as last parameter for pipelining``
     let token = "test-token"
 
     // Act - This should compile, demonstrating pipeline compatibility
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
     client |> Realtime.setAuth token
     let channel = client |> Realtime.channel "test"
 
@@ -239,7 +240,7 @@ let ``Storage module functions accept client as last parameter for pipelining`` 
 
     // Act - This should compile, demonstrating pipeline compatibility
     let bucket =
-        Supabase.createDefault url key
+        Supabase.createDefault url key :?> Supabase.Client
         |> Storage.bucket "test-bucket"
 
     // Assert
@@ -250,7 +251,7 @@ let ``Supabase.from can work with different model types`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act
     let table1 = Supabase.from<TestModel> client
@@ -273,7 +274,7 @@ let ``Client can be created with custom schema`` () =
         |> Supabase.create url key
 
     // Assert
-    client |> should be instanceOfType<Client>
+    client |> should be instanceOfType<Supabase.Client>
 
 [<Fact>]
 let ``Client can be created with multiple configuration options`` () =
@@ -292,14 +293,14 @@ let ``Client can be created with multiple configuration options`` () =
         |> Supabase.create url key
 
     // Assert
-    client |> should be instanceOfType<Client>
+    client |> should be instanceOfType<Supabase.Client>
 
 [<Fact>]
 let ``All module functions return expected types`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act & Assert - Type checks
     Supabase.from<TestModel> client |> should be instanceOfType<Supabase.Postgrest.Table<TestModel>>
@@ -313,7 +314,7 @@ let ``Module functions support currying`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act - Partial application
     let getBucket = Storage.bucket "test-bucket"
@@ -333,17 +334,17 @@ let ``Client creation with empty URL and key creates client`` () =
     let key = ""
 
     // Act
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Assert
-    client |> should be instanceOfType<Client>
+    client |> should be instanceOfType<Supabase.Client>
 
 [<Fact(Skip = "Realtime channels require a live connection in Supabase.Realtime 7.x")>]
 let ``Realtime.channel with different names returns different channels`` () =
     // Arrange
     let url = "https://test.supabase.co"
     let key = "test-key"
-    let client = Supabase.createDefault url key
+    let client = Supabase.createDefault url key :?> Supabase.Client
 
     // Act
     let channel1 = Realtime.channel "channel1" client

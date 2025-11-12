@@ -11,7 +11,7 @@ let configureSupabaseOptions() =
     }
 
 // Example 1: Create and initialize client using idiomatic F# modules
-let example1_CreateClient() = async {
+let example1_CreateClient() : Async<Supabase.Client option> = async {
     printfn "Example 1: Creating Supabase client"
 
     let url = Environment.GetEnvironmentVariable("SUPABASE_URL")
@@ -20,19 +20,21 @@ let example1_CreateClient() = async {
     match ofObj url, ofObj key with
     | Some url, Some key ->
         let options = configureSupabaseOptions()
-        let client = Supabase.create url key options
+        let clientInterface = Supabase.create url key options
+        // Downcast to concrete Client type
+        let client = clientInterface :?> Supabase.Client
 
         // Initialize using F# async
-        let! initializedClient = Supabase.initialize client
+        let! _ = Supabase.initialize client
         printfn "✓ Client initialized successfully"
-        return Some initializedClient
+        return Some client
     | _ ->
         printfn "✗ SUPABASE_URL and SUPABASE_KEY environment variables must be set"
         return None
 }
 
 // Example 2: Authentication using idiomatic F# functions
-let example2_Authentication client = async {
+let example2_Authentication (client: Supabase.Client) = async {
     printfn "\nExample 2: Authentication"
 
     try
@@ -69,7 +71,7 @@ let example2_Authentication client = async {
 }
 
 // Example 3: Database operations using F# async
-let example3_DatabaseOperations client = async {
+let example3_DatabaseOperations (client: Supabase.Client) = async {
     printfn "\nExample 3: Database operations"
 
     try
@@ -93,7 +95,7 @@ let example3_DatabaseOperations client = async {
 }
 
 // Example 4: Realtime using F# async
-let example4_Realtime client = async {
+let example4_Realtime (client: Supabase.Client) = async {
     printfn "\nExample 4: Realtime"
 
     try
@@ -115,7 +117,7 @@ let example4_Realtime client = async {
 }
 
 // Example 5: Storage operations
-let example5_Storage client = async {
+let example5_Storage (client: Supabase.Client) = async {
     printfn "\nExample 5: Storage"
 
     try
@@ -142,7 +144,7 @@ let example5_Storage client = async {
 }
 
 // Example 6: RPC (Remote Procedure Call)
-let example6_RPC client = async {
+let example6_RPC (client: Supabase.Client) = async {
     printfn "\nExample 6: Remote Procedure Call"
 
     try
@@ -158,7 +160,7 @@ let example6_RPC client = async {
 }
 
 // Example 7: Using computation expressions
-let example7_ComputationExpression client = async {
+let example7_ComputationExpression (client: Supabase.Client) = async {
     printfn "\nExample 7: Computation expressions"
 
     // Using auth workflow
@@ -207,9 +209,9 @@ let example8_PipelineStyle() = async {
             }
 
         // Create and initialize client using F# pipeline
-        let! client =
-            Supabase.create url key options
-            |> Supabase.initialize
+        let clientInterface = Supabase.create url key options
+        let client = clientInterface :?> Supabase.Client
+        let! _ = Supabase.initialize client
 
         printfn "✓ Client created and initialized using pipeline"
 
