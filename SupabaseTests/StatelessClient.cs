@@ -13,21 +13,38 @@ namespace SupabaseTests
     public class StatelessClient
     {
 
-        private string supabaseUrl = "http://localhost";
+        private static readonly string? IntegrationUrl = Environment.GetEnvironmentVariable("SUPABASE_TEST_URL");
+        private static readonly string? IntegrationServiceRoleKey =
+            Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY");
+        private const string MissingCredentialsMessage =
+            "Integration tests require SUPABASE_TEST_URL and SUPABASE_TEST_SERVICE_ROLE_KEY environment variables.";
+
+        private static bool HasIntegrationConfig =>
+            !string.IsNullOrWhiteSpace(IntegrationUrl) && !string.IsNullOrWhiteSpace(IntegrationServiceRoleKey);
+
         private Supabase.SupabaseOptions options = new()
         {
-            AuthUrlFormat = "{0}:54321/rest/v1",
-            RealtimeUrlFormat = "ws://127.0.0.1:54321/realtime/v1",
-            RestUrlFormat = "{0}:54321/rest/v1",
+            AuthUrlFormat = "{0}/auth/v1",
+            RealtimeUrlFormat = "{0}/realtime/v1",
+            RestUrlFormat = "{0}/rest/v1",
         };
+
+        private static void EnsureIntegrationConfig()
+        {
+            if (!HasIntegrationConfig)
+                Assert.Inconclusive(MissingCredentialsMessage);
+        }
 
         [TestMethod("Can access Stateless REST")]
         public async Task CanAccessStatelessRest()
         {
-            var restOptions = GetRestOptions("sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz", options);
-            var result1 = await new Supabase.Postgrest.Client(String.Format(options.RestUrlFormat, supabaseUrl), restOptions).Table<Channel>().Get();
+            EnsureIntegrationConfig();
 
-            var result2 = await From<Channel>(supabaseUrl, "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz", options).Get();
+            var restOptions = GetRestOptions(IntegrationServiceRoleKey!, options);
+            var restEndpoint = string.Format(options.RestUrlFormat, IntegrationUrl);
+            var result1 = await new Supabase.Postgrest.Client(restEndpoint, restOptions).Table<Channel>().Get();
+
+            var result2 = await From<Channel>(IntegrationUrl!, IntegrationServiceRoleKey!, options).Get();
 
             Assert.AreEqual(result1.Models.Count, result2.Models.Count);
         }
@@ -35,7 +52,8 @@ namespace SupabaseTests
         [TestMethod("Can access Stateless GoTrue")]
         public void CanAccessStatelessGotrue()
         {
-            var gotrueOptions = GetAuthOptions(supabaseUrl, null, options);
+            var baseUrl = IntegrationUrl ?? "https://project.supabase.co";
+            var gotrueOptions = GetAuthOptions(baseUrl, null, options);
 
             var client = new Supabase.Gotrue.Client(gotrueOptions);
 
@@ -57,7 +75,8 @@ namespace SupabaseTests
                 }
             };
 
-            var gotrueOptions = GetAuthOptions(supabaseUrl, "456", options);
+            var baseUrl = IntegrationUrl ?? "https://project.supabase.co";
+            var gotrueOptions = GetAuthOptions(baseUrl, "456", options);
 
             Assert.AreEqual("Bearer 123", gotrueOptions.Headers["Authorization"]);
         }

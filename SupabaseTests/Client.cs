@@ -10,42 +10,47 @@ namespace SupabaseTests
     [TestClass]
     public class Client
     {
-        private static readonly Random Random = new();
-
         private Supabase.Client _instance;
 
-        private static string RandomString(int length)
-        {
-            const string chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[Random.Next(s.Length)]).ToArray());
-        }
+        private static readonly string? IntegrationUrl = Environment.GetEnvironmentVariable("SUPABASE_TEST_URL");
+        private static readonly string? IntegrationServiceRoleKey =
+            Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY");
+        private const string MissingCredentialsMessage =
+            "Integration tests require SUPABASE_TEST_URL and SUPABASE_TEST_SERVICE_ROLE_KEY environment variables.";
 
-        [TestInitialize]
-        public async Task InitializeTest()
+        private static bool HasIntegrationConfig =>
+            !string.IsNullOrWhiteSpace(IntegrationUrl) && !string.IsNullOrWhiteSpace(IntegrationServiceRoleKey);
+
+        private async Task<Supabase.Client> EnsureClientAsync()
         {
-            _instance = new Supabase.Client("http://localhost", "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz", new Supabase.SupabaseOptions
+            if (!HasIntegrationConfig)
+                Assert.Inconclusive(MissingCredentialsMessage);
+
+            if (_instance != null)
+                return _instance;
+
+            _instance = new Supabase.Client(IntegrationUrl!, IntegrationServiceRoleKey!, new Supabase.SupabaseOptions
             {
-                AuthUrlFormat = "{0}:54321/rest/v1",
-                RealtimeUrlFormat = "ws://127.0.0.1:54321/realtime/v1",
-                RestUrlFormat = "{0}:54321/rest/v1",
-                AutoConnectRealtime = false,
+                AutoConnectRealtime = false
             });
             await _instance.InitializeAsync();
+            return _instance;
         }
 
         [TestMethod("Client: Initializes.")]
-        public void ClientInitializes()
+        public async Task ClientInitializes()
         {
-            Assert.IsNotNull(_instance.Realtime);
-            Assert.IsNotNull(_instance.Auth);
+            var client = await EnsureClientAsync();
+            Assert.IsNotNull(client.Realtime);
+            Assert.IsNotNull(client.Auth);
         }
 
         [TestMethod("SupabaseModel: Successfully Updates")]
         public async Task SupabaseModelUpdates()
         {
+            var client = await EnsureClientAsync();
             var model = new Models.Channel { Slug = Guid.NewGuid().ToString() };
-            var insertResult = await _instance.From<Models.Channel>().Insert(model);
+            var insertResult = await client.From<Models.Channel>().Insert(model);
             var newChannel = insertResult.Models.FirstOrDefault();
 
             var newSlug = $"Updated Slug @ {DateTime.Now.ToLocalTime()}";
@@ -59,15 +64,16 @@ namespace SupabaseTests
         [TestMethod("SupabaseModel: Successfully Deletes")]
         public async Task SupabaseModelDeletes()
         {
+            var client = await EnsureClientAsync();
             var slug = Guid.NewGuid().ToString();
             var model = new Models.Channel { Slug = slug };
 
-            var insertResult = await _instance.From<Models.Channel>().Insert(model);
+            var insertResult = await client.From<Models.Channel>().Insert(model);
             var newChannel = insertResult.Models.FirstOrDefault();
 
             await newChannel.Delete<Models.Channel>();
 
-            var result = await _instance.From<Models.Channel>()
+            var result = await client.From<Models.Channel>()
                 .Filter("slug", Constants.Operator.Equals, slug).Get();
 
             Assert.AreEqual(0, result.Models.Count);
@@ -76,17 +82,19 @@ namespace SupabaseTests
         [TestMethod("Supports Dependency Injection for clients via property")]
         public void SupportsDIForClientsViaProperty()
         {
-            _instance.Auth = new FakeAuthClient();
-            _instance.Functions = new FakeFunctionsClient();
-            _instance.Realtime = new FakeRealtimeClient();
-            _instance.Postgrest = new FakeRestClient();
-            _instance.Storage = new FakeStorageClient();
+            var client = new Supabase.Client(
+                new FakeAuthClient(),
+                new FakeRealtimeClient(),
+                new FakeFunctionsClient(),
+                new FakeRestClient(),
+                new FakeStorageClient(),
+                new Supabase.SupabaseOptions());
 
-            Assert.ThrowsExceptionAsync<NotImplementedException>(() => _instance.Auth.GetUser(""));
-            Assert.ThrowsExceptionAsync<NotImplementedException>(() => _instance.Functions.Invoke(""));
-            Assert.ThrowsExceptionAsync<NotImplementedException>(() => _instance.Realtime.ConnectAsync());
-            Assert.ThrowsExceptionAsync<NotImplementedException>(() => _instance.Postgrest.Rpc("", null));
-            Assert.ThrowsExceptionAsync<NotImplementedException>(() => _instance.Storage.ListBuckets());
+            Assert.ThrowsExceptionAsync<NotImplementedException>(() => client.Auth.GetUser(""));
+            Assert.ThrowsExceptionAsync<NotImplementedException>(() => client.Functions.Invoke(""));
+            Assert.ThrowsExceptionAsync<NotImplementedException>(() => client.Realtime.ConnectAsync());
+            Assert.ThrowsExceptionAsync<NotImplementedException>(() => client.Postgrest.Rpc("", null));
+            Assert.ThrowsExceptionAsync<NotImplementedException>(() => client.Storage.ListBuckets());
         }
     }
 }
