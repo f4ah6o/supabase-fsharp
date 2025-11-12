@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.x
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase
+        run: supabase start
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: |
+          dotnet build Supabase.FSharp/Supabase.FSharp.fsproj --configuration Release --no-restore
+          dotnet build Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj --configuration Release --no-restore
