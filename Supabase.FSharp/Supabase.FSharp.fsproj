@@ -26,10 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Supabase\Supabase.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
+        <PackageReference Include="Supabase" Version="1.1.1" />
         <PackageReference Include="Supabase.Gotrue" Version="6.0.3" />
         <PackageReference Include="Supabase.Postgrest" Version="4.1.0" />
         <PackageReference Include="Supabase.Realtime" Version="7.2.0" />

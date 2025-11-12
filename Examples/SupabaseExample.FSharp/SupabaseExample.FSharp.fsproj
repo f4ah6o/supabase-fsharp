@@ -11,7 +11,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Supabase\Supabase.csproj" />
         <ProjectReference Include="..\..\Supabase.FSharp\Supabase.FSharp.fsproj" />
     </ItemGroup>
 

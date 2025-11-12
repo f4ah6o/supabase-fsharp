@@ -30,6 +30,5 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Supabase.FSharp\Supabase.FSharp.fsproj" />
-        <ProjectReference Include="..\Supabase\Supabase.csproj" />
     </ItemGroup>
 </Project>
