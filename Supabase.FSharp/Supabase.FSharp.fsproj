@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>netstandard2.1</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackOnBuild>true</PackOnBuild>
+        <Title>Supabase.FSharp</Title>
+        <PackageId>Supabase.FSharp</PackageId>
+        <Authors>Joseph Schultz &lt;joseph@acupofjose.com&gt;</Authors>
+        <Description>F# extensions and idiomatic wrappers for the Supabase C# client</Description>
+        <Copyright>MIT</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/supabase-community/supabase-csharp</PackageProjectUrl>
+        <PackageTags>supabase fsharp functional</PackageTags>
+        <ReleaseVersion>1.1.1</ReleaseVersion>
+        <PackageVersion>1.1.1</PackageVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <RepositoryUrl>https://github.com/supabase-community/supabase-csharp</RepositoryUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="AsyncExtensions.fs" />
+        <Compile Include="OptionExtensions.fs" />
+        <Compile Include="SupabaseBuilder.fs" />
+        <Compile Include="SupabaseModule.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Supabase\Supabase.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FSharp.Core" Version="8.0.0" />
+    </ItemGroup>
+</Project>

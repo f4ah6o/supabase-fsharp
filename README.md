@@ -30,6 +30,11 @@ the [Generated API Docs](https://supabase-community.github.io/supabase-csharp/ap
   - Store files in S3 with additional managed metadata
 - [x] Integration with [Supabase Edge Functions](https://github.com/supabase-community/functions-csharp)
   - Run serverless functions on the edge
+- [x] **F# Support** - Idiomatic F# extensions and APIs
+  - F# Async workflow support
+  - Option type conversions for nullable values
+  - Computation expressions for configuration
+  - Pipeline-friendly module functions
 - [x] [Nuget Release](https://www.nuget.org/packages/supabase-csharp)
 
 ## Quickstart
@@ -46,6 +51,7 @@ a public/user account, please do so using a separate client instance for each._
 ## Documentation
 
 - [Getting Started](https://github.com/supabase-community/supabase-csharp/wiki#getting-started)
+- [**F# Guide**](Documentation/FSharp.md) - Complete guide for F# developers
 - [Unity](https://github.com/supabase-community/supabase-csharp/wiki/Unity)
 - [Desktop/Mobile Clients (e.g. Xamarin, MAUI, etc.)](https://github.com/supabase-community/supabase-csharp/wiki/Desktop-Clients)
 - [Server-Side Applications](https://github.com/supabase-community/supabase-csharp/wiki/Server-Side-Applications)
