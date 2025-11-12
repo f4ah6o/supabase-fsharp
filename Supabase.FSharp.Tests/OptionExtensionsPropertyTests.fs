@@ -41,9 +41,10 @@ let ``toNullable and ofNullable form a round-trip for None`` () =
     result = original
 
 [<Property>]
-let ``ofObj and toObj form a round-trip for non-null strings`` (NonNull value) =
-    let result = value |> ofObj |> toObj
-    result = value
+let ``ofObj and toObj form a round-trip for non-null strings`` (value: NonNull<string>) =
+    let str = value.Get
+    let result = str |> ofObj |> toObj
+    result = str
 
 [<Property>]
 let ``ofObj and toObj preserve null`` () =
@@ -80,9 +81,8 @@ let ``defaultValue returns the default for None`` (defaultVal: int) =
     result = defaultVal
 
 [<Property>]
-let ``defaultValue is identity when applied to Some`` (value: int) =
-    // For any default value, defaultValue d (Some x) = x
-    fun defaultVal -> defaultValue defaultVal (Some value) = value
+let ``defaultValue is identity when applied to Some`` (defaultVal: int) (value: int) =
+    defaultValue defaultVal (Some value) = value
 
 // ==============================================
 // defaultWith Properties

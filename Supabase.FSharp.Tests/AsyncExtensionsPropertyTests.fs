@@ -6,6 +6,12 @@ open FsCheck
 open FsCheck.Xunit
 open Supabase.FSharp
 
+module Async =
+    let map f computation = async {
+        let! value = computation
+        return f value
+    }
+
 // ==============================================
 // Property-Based Tests for AsyncExtensions
 // ==============================================
@@ -191,12 +197,11 @@ let ``AsAsyncResult preserves result type for lists`` (xs: int list) =
     result = xs
 
 [<Property>]
-let ``AsTask preserves result type for lists`` (xs: string list) =
-    not (List.exists isNull xs) ==> lazy (
-        let asyncOp = async { return xs }
-        let task = AsyncExtensions.AsTask asyncOp
-        task.Result = xs
-    )
+let ``AsTask preserves result type for lists`` (xs: NonNull<string> list) =
+    let values = xs |> List.map (fun x -> x.Get)
+    let asyncOp = async { return values }
+    let task = AsyncExtensions.AsTask asyncOp
+    task.Result = values
 
 // ==============================================
 // Sequential Conversion Properties
