@@ -51,11 +51,11 @@ CREATE TABLE movies (
 -- Enable Row Level Security (RLS)
 ALTER TABLE movies ENABLE ROW LEVEL SECURITY;
 
--- Grant read access to anonymous users
-CREATE POLICY "Allow anonymous read access"
+-- Grant read access to all users (authenticated and anonymous)
+CREATE POLICY "Allow read access to all users"
 ON movies
 FOR SELECT
-TO anon
+TO authenticated, anon
 USING (true);
 
 -- Insert sample data
@@ -98,12 +98,58 @@ USING (auth.uid() = id);
 
 If you want to use the storage features:
 
+#### Step 1: Create Bucket
+
 1. Go to Supabase Dashboard > Storage
 2. Click "Create a new bucket"
 3. Create a bucket named `test-bucket`
-4. Configure bucket policy:
-   - Public bucket: ON (if you want to allow public access)
-   - Or set appropriate Row Level Security policies
+4. Configure bucket settings:
+   - **Public bucket**: OFF (recommended for security)
+   - We'll set up RLS policies instead
+
+#### Step 2: Set Row Level Security Policies
+
+Go to Supabase Dashboard > SQL Editor and run the following SQL:
+
+```sql
+-- Policy 1: Allow authenticated users to upload files
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'test-bucket');
+
+-- Policy 2: Allow authenticated users to update their files
+CREATE POLICY "Allow authenticated updates"
+ON storage.objects
+FOR UPDATE
+TO authenticated
+USING (bucket_id = 'test-bucket');
+
+-- Policy 3: Allow authenticated users to delete their files
+CREATE POLICY "Allow authenticated deletes"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (bucket_id = 'test-bucket');
+
+-- Policy 4: Allow public read access to all files
+CREATE POLICY "Allow public read"
+ON storage.objects
+FOR SELECT
+TO public
+USING (bucket_id = 'test-bucket');
+```
+
+**Alternative: Public Bucket (for development only)**
+
+If you prefer to allow unrestricted access for testing:
+
+1. Go to Supabase Dashboard > Storage
+2. Select `test-bucket`
+3. Click "Settings"
+4. Toggle "Public bucket" to ON
+5. This will allow anyone to upload/download files without authentication
 
 ### 4. Create RPC Function (Optional)
 
@@ -344,6 +390,54 @@ Database error: relation "movies" does not exist
 - Verify the `movies` table is created
 - Check table name is correct (lowercase, plural)
 - Verify Row Level Security (RLS) policies are correctly configured
+
+### Movies Table Returns 0 Rows
+
+```
+Example 3: Database operations
+Fetching movies...
+✓ Found 0 movies
+```
+
+**Solution:**
+
+This typically happens when RLS policies are misconfigured or data was deleted. Fix it by:
+
+1. **Check if data exists:**
+   ```sql
+   -- Run in Supabase SQL Editor
+   SELECT * FROM movies;
+   ```
+
+2. **Verify RLS policies:**
+   ```sql
+   -- Check existing policies
+   SELECT policy_name, roles, qual
+   FROM pg_policies
+   WHERE tablename = 'movies';
+   ```
+
+3. **Fix RLS policies:**
+   ```sql
+   -- Remove old policy if it exists
+   DROP POLICY IF EXISTS "Allow anonymous read access" ON movies;
+
+   -- Create correct policy (allows both authenticated and anonymous users)
+   CREATE POLICY "Allow read access to all users"
+   ON movies
+   FOR SELECT
+   TO authenticated, anon
+   USING (true);
+   ```
+
+4. **Re-insert data if needed:**
+   ```sql
+   INSERT INTO movies (name) VALUES
+       ('The Matrix'),
+       ('Inception'),
+       ('Interstellar')
+   ON CONFLICT DO NOTHING;
+   ```
 
 ### Storage Error
 

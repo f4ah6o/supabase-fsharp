@@ -51,11 +51,11 @@ CREATE TABLE movies (
 -- Row Level Security (RLS) の有効化
 ALTER TABLE movies ENABLE ROW LEVEL SECURITY;
 
--- 匿名ユーザーに読み取り権限を付与
-CREATE POLICY "Allow anonymous read access"
+-- すべてのユーザー（認証済み・匿名）に読み取り権限を付与
+CREATE POLICY "Allow read access to all users"
 ON movies
 FOR SELECT
-TO anon
+TO authenticated, anon
 USING (true);
 
 -- サンプルデータの挿入
@@ -344,6 +344,54 @@ Database error: relation "movies" does not exist
 - `movies` テーブルが作成されているか確認
 - テーブル名が正確か確認（小文字・複数形）
 - Row Level Security (RLS) ポリシーが正しく設定されているか確認
+
+### Movies テーブルが0件を返す
+
+```
+Example 3: Database operations
+Fetching movies...
+✓ Found 0 movies
+```
+
+**解決方法:**
+
+これは通常、RLSポリシーの設定が誤っているか、データが削除された場合に発生します。以下の手順で修正してください：
+
+1. **データの存在確認:**
+   ```sql
+   -- Supabase SQL Editorで実行
+   SELECT * FROM movies;
+   ```
+
+2. **RLSポリシーの確認:**
+   ```sql
+   -- 既存のポリシーを確認
+   SELECT policy_name, roles, qual
+   FROM pg_policies
+   WHERE tablename = 'movies';
+   ```
+
+3. **RLSポリシーの修正:**
+   ```sql
+   -- 古いポリシーを削除（存在する場合）
+   DROP POLICY IF EXISTS "Allow anonymous read access" ON movies;
+
+   -- 正しいポリシーを作成（認証済みと匿名ユーザー両方を許可）
+   CREATE POLICY "Allow read access to all users"
+   ON movies
+   FOR SELECT
+   TO authenticated, anon
+   USING (true);
+   ```
+
+4. **必要に応じてデータを再挿入:**
+   ```sql
+   INSERT INTO movies (name) VALUES
+       ('The Matrix'),
+       ('Inception'),
+       ('Interstellar')
+   ON CONFLICT DO NOTHING;
+   ```
 
 ### ストレージエラー
 
