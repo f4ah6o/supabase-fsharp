@@ -38,36 +38,61 @@ let example2_Authentication (client: Supabase.Client) = async {
     printfn "\nExample 2: Authentication"
 
     try
-        // Sign up a new user
-        let email = "test@example.com"
+        // Use a fixed test user to avoid creating new users on every run
+        let email = "fsharp.demo@example.com"
         let password = "securepassword123"
 
-        printfn "Signing up user: %s" email
-        let! signUpResponse = Auth.signUp email password client
+        // Try to sign in first, if that fails, sign up
+        printfn "Attempting to sign in user: %s" email
+        try
+            let! signInResponse = Auth.signIn email password client
+            match signInResponse with
+            | null ->
+                printfn "  Sign in failed, attempting to sign up..."
+                let! signUpResponse = Auth.signUp email password client
+                match signUpResponse with
+                | null -> printfn "✗ Sign up also failed"
+                | _ ->
+                    printfn "✓ User signed up successfully"
+                    printfn "  Response type: %s" (signUpResponse.GetType().Name)
+            | _ ->
+                printfn "✓ User signed in successfully"
+                printfn "  Response type: %s" (signInResponse.GetType().Name)
+        with
+        | :? AggregateException as aggEx when aggEx.InnerException <> null ->
+            // Sign in failed, try sign up
+            printfn "  Sign in failed (%s), attempting to sign up..." aggEx.InnerException.Message
+            let! signUpResponse = Auth.signUp email password client
+            match signUpResponse with
+            | null -> printfn "✗ Sign up failed"
+            | _ ->
+                printfn "✓ User signed up successfully"
+                printfn "  Response type: %s" (signUpResponse.GetType().Name)
 
-        match signUpResponse with
-        | null -> printfn "✗ Sign up failed"
-        | response ->
-            printfn "✓ User signed up successfully"
+        // Check current user using option types
+        match Auth.currentUser client with
+        | Some user ->
+            printfn "✓ User authenticated successfully"
 
-            // Check current user using option types
-            match Auth.currentUser client with
-            | Some user ->
-                printfn "✓ Current user ID: %s" user.Id
+            // Get email safely using option extension
+            match user.EmailOption with
+            | Some email -> printfn "  Email: %s" email
+            | None -> printfn "  Email: (not set)"
 
-                // Get email safely using option extension
-                match user.EmailOption with
-                | Some email -> printfn "  Email: %s" email
-                | None -> printfn "  Email: (not set)"
+            // Keep user signed in for subsequent examples
+            printfn "✓ User remains signed in for storage operations"
+        | None ->
+            printfn "✗ No current user - checking session..."
+            match Auth.currentSession client with
+            | Some session ->
+                printfn "  Session exists but user not available"
+                printfn "  This may indicate email confirmation is required"
             | None ->
-                printfn "✗ No current user"
-
-            // Sign out
-            printfn "Signing out..."
-            do! Auth.signOut client
-            printfn "✓ Signed out successfully"
+                printfn "  No active session found"
     with
-    | ex -> printfn "✗ Authentication error: %s" ex.Message
+    | ex ->
+        printfn "✗ Authentication error: %s" ex.Message
+        printfn "  Note: This may be due to Supabase email validation settings or email confirmation requirements"
 }
 
 // Example 3: Database operations using F# async
@@ -120,13 +145,34 @@ let example4_Realtime (client: Supabase.Client) = async {
 let example5_Storage (client: Supabase.Client) = async {
     printfn "\nExample 5: Storage"
 
+    let bucketId = "test-bucket"
+
     try
-        let bucketId = "test-bucket"
         let filePath = "test-file.txt"
         let fileContent = System.Text.Encoding.UTF8.GetBytes("Hello from F#!")
 
+        // Check if authenticated
+        match Auth.currentUser client with
+        | None ->
+            printfn "⚠ Not authenticated - some storage operations may require authentication"
+        | Some _ ->
+            printfn "✓ Authenticated user detected"
+
+        // Note: ListBuckets() may require admin permissions, so we'll proceed with upload directly
+        printfn "Preparing to upload file to bucket '%s'..." bucketId
+
+        // Try to remove existing file first (if it exists)
+        try
+            let bucket = client.Storage.From(bucketId)
+            let! _ = bucket.Remove(filePath) |> Async.AwaitTask
+            printfn "  Removed existing file: %s" filePath
+        with
+        | ex ->
+            // File doesn't exist or couldn't be deleted - this is fine
+            printfn "  No existing file to remove (continuing...)"
+
         // Upload file
-        printfn "Uploading file to bucket '%s'..." bucketId
+        printfn "Uploading file..."
         let! uploadResult = Storage.upload bucketId filePath fileContent client
         printfn "✓ File uploaded: %s" filePath
 
@@ -140,7 +186,18 @@ let example5_Storage (client: Supabase.Client) = async {
         printfn "✓ Found %d files" files.Count
 
     with
-    | ex -> printfn "✗ Storage error: %s" ex.Message
+    | ex ->
+        printfn "✗ Storage error: %s" ex.Message
+
+        // Check for specific error types
+        if ex.Message.Contains("row-level security policy") then
+            printfn "  Hint: RLS policy issue. Try making the bucket public in Supabase Dashboard"
+        elif ex.Message.Contains("already exists") then
+            printfn "  Hint: File already exists. The example should handle this, please report this issue."
+        elif ex.Message.Contains("not found") || ex.Message.Contains("does not exist") then
+            printfn "  Hint: Bucket '%s' may not exist. Create it in Supabase Dashboard > Storage" bucketId
+        else
+            printfn "  Note: Check Supabase Dashboard for more details"
 }
 
 // Example 6: RPC (Remote Procedure Call)
@@ -248,7 +305,14 @@ let main argv =
             do! example6_RPC client
             do! example7_ComputationExpression client
             let! _ = example8_PipelineStyle()
-            ()
+
+            // Clean up: Sign out at the end
+            try
+                printfn "\nCleaning up..."
+                do! Auth.signOut client
+                printfn "✓ Signed out successfully"
+            with
+            | ex -> printfn "✗ Sign out error: %s" ex.Message
         | None ->
             printfn "\nSkipping examples due to missing configuration"
             printfn "Please set SUPABASE_URL and SUPABASE_KEY environment variables"
