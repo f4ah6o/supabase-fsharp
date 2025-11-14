@@ -29,24 +29,7 @@ if [[ -z "$SUPABASE_TEST_URL" || -z "$SUPABASE_TEST_SERVICE_ROLE_KEY" ]]; then
   exit 1
 fi
 
-TEST_SCHEMA_SQL=$(cat <<'SQL'
-CREATE TABLE IF NOT EXISTS test_items (
-  id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  value INTEGER NOT NULL DEFAULT 0,
-  is_active BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE test_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Allow all operations for service role"
-  ON test_items FOR ALL
-  USING (true)
-  WITH CHECK (true);
-SQL
-)
-
-supabase db execute "$TEST_SCHEMA_SQL" >/dev/null
+supabase migration up --local --yes >/dev/null
 
 dotnet restore
 

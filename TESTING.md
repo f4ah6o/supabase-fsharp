@@ -58,17 +58,9 @@ This document describes how to run tests for the Supabase F# library.
 
 3. **Run Tests**
 
-   - 1Password CLI を使う場合:
-     ```bash
-     op run --env-file=.env -- dotnet test
-     ```
+   - Supabase CLI (`supabase start` 済み) が使える環境では、単純に `dotnet test` を実行するだけで OK です。環境変数が未設定の場合はテストコード内で `supabase status -o env` と `supabase migration up --local --yes` を呼び出して補完します。
 
-   - 直接環境変数をセットする場合:
-     ```bash
-     export SUPABASE_TEST_URL=http://127.0.0.1:54321
-     export SUPABASE_TEST_SERVICE_ROLE_KEY=<your-service-role-key>
-     dotnet test
-     ```
+   - 既存の `.env` を使いたい場合は、従来どおり `op run --env-file=.env -- dotnet test` や `export ... && dotnet test` でも動きます。
 
 4. **CI と同じ流れをまとめて実行したい場合**
 
@@ -78,7 +70,7 @@ This document describes how to run tests for the Supabase F# library.
    ./scripts/run-local-supabase-tests.sh
    ```
 
-   このスクリプトは GitHub Actions と同じ SQL を適用し、`supabase status -o env` から取得した URL/Key を使って `dotnet test` を実行します。
+   このスクリプトは GitHub Actions と同じように `supabase migration up --local --yes` を実行した後、`supabase status -o env` から取得した URL/Key を使って `dotnet test` を実行します。
 
 ### Option 2: Running with Remote Supabase
 
