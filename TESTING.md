@@ -52,23 +52,25 @@ This document describes how to run tests for the Supabase F# library.
 
 2. **Update .env file**
    ```env
-   SUPABASE_TEST_URL=http://127.0.0.1:54321
-   SUPABASE_TEST_SERVICE_ROLE_KEY=<your-service-role-key-from-supabase-start>
+   SUPABASE_URL=http://127.0.0.1:54321
+   SUPABASE_KEY=<your-service-role-key-from-supabase-start>
    ```
 
 3. **Run Tests**
 
-   With 1Password CLI:
+   - Supabase CLI (`supabase start` 済み) が使える環境では、単純に `dotnet test` を実行するだけで OK です。環境変数が未設定の場合はテストコード内で `supabase status -o env` と `supabase migration up --local --yes` を呼び出して補完します。
+
+   - 既存の `.env` を使いたい場合は、従来どおり `op run --env-file=.env -- dotnet test` や `export ... && dotnet test` でも動きます。
+
+4. **CI と同じ流れをまとめて実行したい場合**
+
+   Supabase を `supabase start` で起動した後、以下のスクリプトでスキーマ作成～テスト実行までを自動化できます:
+
    ```bash
-   op run --env-file=.env -- dotnet test
+   ./scripts/run-local-supabase-tests.sh
    ```
 
-   Or without 1Password CLI:
-   ```bash
-   export SUPABASE_TEST_URL=http://127.0.0.1:54321
-   export SUPABASE_TEST_SERVICE_ROLE_KEY=<your-service-role-key>
-   dotnet test
-   ```
+   このスクリプトは GitHub Actions と同じように `supabase migration up --local --yes` を実行した後、`supabase status -o env` から取得した URL/Key を使って `dotnet test` を実行します。
 
 ### Option 2: Running with Remote Supabase
 
@@ -78,8 +80,8 @@ This document describes how to run tests for the Supabase F# library.
 
 2. **Update .env file**
    ```env
-   SUPABASE_TEST_URL=https://<project-ref>.supabase.co
-   SUPABASE_TEST_SERVICE_ROLE_KEY=<your-service-role-key>
+   SUPABASE_URL=https://<project-ref>.supabase.co
+   SUPABASE_KEY=<your-service-role-key>
    ```
 
 3. **Run Tests**
@@ -122,8 +124,8 @@ The GitHub Actions workflow:
 No secrets are required for the default workflow as it uses a local Supabase instance. However, if you want to test against a remote Supabase instance:
 
 1. Add these secrets to your repository:
-   - `SUPABASE_TEST_URL`
-   - `SUPABASE_TEST_SERVICE_ROLE_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
 
 2. Update `.github/workflows/test.yaml` to use these secrets instead of local Supabase.
 
@@ -148,7 +150,7 @@ This table is automatically created by:
 ## Troubleshooting
 
 ### Integration tests are skipped
-- **Cause**: Environment variables `SUPABASE_TEST_URL` or `SUPABASE_TEST_SERVICE_ROLE_KEY` are not set
+- **Cause**: Environment variables `SUPABASE_URL` or `SUPABASE_KEY` are not set
 - **Solution**: Ensure `.env` file is properly configured and using `op run --env-file=.env` or export variables manually
 
 ### Tests fail with connection errors

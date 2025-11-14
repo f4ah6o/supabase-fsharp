@@ -1,6 +1,8 @@
 module SupabaseIntegrationPropertyTests
 
 open System
+open System.Diagnostics
+open System.IO
 open Xunit
 open FsCheck
 open FsCheck.Xunit
@@ -35,10 +37,109 @@ type TestItem() =
 // Test Helpers
 // ==============================================
 
-/// Get Supabase client from environment variables
+let private supabaseUrlVar = "SUPABASE_URL"
+let private supabaseKeyVar = "SUPABASE_KEY"
+
+/// Lazily locate the repository root that contains the Supabase config
+let private supabaseWorkdir =
+    let rec tryFindSupabaseRoot (dir: DirectoryInfo) =
+        if isNull dir then
+            None
+        else
+            let configPath = Path.Combine(dir.FullName, "supabase", "config.toml")
+            if File.Exists(configPath) then
+                Some dir.FullName
+            else
+                tryFindSupabaseRoot dir.Parent
+
+    lazy (Directory.GetCurrentDirectory() |> DirectoryInfo |> tryFindSupabaseRoot)
+
+let private runSupabaseCommand (arguments: string) =
+    match supabaseWorkdir.Value with
+    | None -> None
+    | Some workdir ->
+        try
+            let psi =
+                ProcessStartInfo(
+                    FileName = "supabase",
+                    Arguments = arguments,
+                    WorkingDirectory = workdir,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                )
+
+            use proc = new Process()
+            proc.StartInfo <- psi
+            if proc.Start() then
+                let output = proc.StandardOutput.ReadToEnd()
+                let error = proc.StandardError.ReadToEnd()
+                proc.WaitForExit()
+                Some(proc.ExitCode, output, error)
+            else
+                None
+        with
+        | _ -> None
+
+let private tryPopulateEnvFromSupabaseCli() =
+    match runSupabaseCommand "status -o env" with
+    | Some (0, output, _) ->
+        let tryExtract key =
+            output.Split(Environment.NewLine)
+            |> Array.tryPick (fun line ->
+                let trimmed = line.Trim()
+                if trimmed.StartsWith(key + "=") then
+                    let value = trimmed.Substring(key.Length + 1).Trim().Trim('"')
+                    if String.IsNullOrWhiteSpace(value) then None else Some value
+                else
+                    None)
+
+        match tryExtract "API_URL", tryExtract "SERVICE_ROLE_KEY" with
+        | Some url, Some key ->
+            Environment.SetEnvironmentVariable(supabaseUrlVar, url)
+            Environment.SetEnvironmentVariable(supabaseKeyVar, key)
+            true
+        | _ -> false
+    | _ -> false
+
+let private ensureLocalSchema() =
+    match runSupabaseCommand "migration up --local --yes" with
+    | Some (0, _, _) -> true
+    | _ -> false
+
+let private supabaseSetup =
+    lazy (
+        let url = Environment.GetEnvironmentVariable(supabaseUrlVar)
+        let key = Environment.GetEnvironmentVariable(supabaseKeyVar)
+        let loadedFromCli =
+            if String.IsNullOrEmpty(url) || String.IsNullOrEmpty(key) then
+                tryPopulateEnvFromSupabaseCli()
+            else
+                false
+
+        let finalUrl = Environment.GetEnvironmentVariable(supabaseUrlVar)
+        let finalKey = Environment.GetEnvironmentVariable(supabaseKeyVar)
+        if String.IsNullOrEmpty(finalUrl) || String.IsNullOrEmpty(finalKey) then
+            false
+        else if loadedFromCli then
+            ensureLocalSchema()
+        else
+            true
+    )
+
+/// Get Supabase client from environment variables or Supabase CLI
 let getSupabaseClient() =
-    let url = Environment.GetEnvironmentVariable("SUPABASE_TEST_URL")
-    let key = Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY")
+    let url = Environment.GetEnvironmentVariable(supabaseUrlVar)
+    let key = Environment.GetEnvironmentVariable(supabaseKeyVar)
+
+    let url, key =
+        if String.IsNullOrEmpty(url) || String.IsNullOrEmpty(key) then
+            let _ = supabaseSetup.Value
+            Environment.GetEnvironmentVariable(supabaseUrlVar),
+            Environment.GetEnvironmentVariable(supabaseKeyVar)
+        else
+            url, key
 
     if String.IsNullOrEmpty(url) || String.IsNullOrEmpty(key) then
         None
@@ -53,16 +154,10 @@ let getSupabaseClient() =
         let client = clientInterface :?> Supabase.Client
         Some client
 
-/// Initialize client if not already initialized
+/// Initialize client (Supabase SDK handles redundant calls internally)
 let ensureInitialized (client: Supabase.Client) = async {
-    try
-        // Try a simple operation to check if initialized
-        let _ = client.Auth
-        return ()
-    with
-    | _ ->
-        let! _ = Supabase.initialize client
-        return ()
+    let! _ = Supabase.initialize client
+    return ()
 }
 
 /// Create a unique test table item
@@ -73,14 +168,16 @@ let createTestItem name value isActive =
     item.IsActive <- isActive
     item
 
+let getTestItemTable (client: Supabase.Client) =
+    Supabase.from<TestItem> client
+
 /// Cleanup test items created during test
 let cleanupTestItems (client: Supabase.Client) names = async {
     try
-        let table = Supabase.from<TestItem> client
         for name in names do
             try
                 let! response =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Equals, name)
                         .Delete()
                     |> Async.AwaitTask
@@ -116,7 +213,7 @@ let ``Client creation with valid credentials returns initialized client`` () =
     match getSupabaseClient() with
     | None ->
         // Skip test if credentials not available
-        Assert.True(true, "Skipped: SUPABASE_TEST_URL or SUPABASE_TEST_SERVICE_ROLE_KEY not set")
+        Assert.True(true, "Skipped: SUPABASE_URL or SUPABASE_KEY not set")
     | Some client ->
         async {
             do! ensureInitialized client
@@ -130,7 +227,7 @@ let ``Client creation with valid credentials returns initialized client`` () =
 let ``Client can be created and initialized multiple times`` () =
     match getSupabaseClient() with
     | None ->
-        Assert.True(true, "Skipped: SUPABASE_TEST_URL or SUPABASE_TEST_SERVICE_ROLE_KEY not set")
+        Assert.True(true, "Skipped: SUPABASE_URL or SUPABASE_KEY not set")
     | Some _ ->
         async {
             // Create and initialize multiple clients
@@ -163,15 +260,13 @@ let ``Inserting and retrieving item preserves data`` (name: string) (value: int)
             let item = createTestItem uniqueName value isActive
 
             try
-                let table = Supabase.from<TestItem> client
-
                 // Insert item
-                let! insertResponse = table.Insert(item) |> Async.AwaitTask
+                let! insertResponse = (getTestItemTable client).Insert(item) |> Async.AwaitTask
                 Assert.NotNull(insertResponse)
 
                 // Retrieve item
                 let! getResponse =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Equals, uniqueName)
                         .Get()
                     |> Async.AwaitTask
@@ -210,20 +305,18 @@ let ``Updating item changes values correctly`` (name: string) (initialValue: int
             let item = createTestItem uniqueName initialValue true
 
             try
-                let table = Supabase.from<TestItem> client
-
                 // Insert item
-                let! insertResponse = table.Insert(item) |> Async.AwaitTask
+                let! insertResponse = (getTestItemTable client).Insert(item) |> Async.AwaitTask
                 let insertedItem = insertResponse.Models.[0]
 
                 // Update item
                 insertedItem.Value <- updatedValue
-                let! updateResponse = table.Update(insertedItem) |> Async.AwaitTask
+                let! updateResponse = (getTestItemTable client).Update(insertedItem) |> Async.AwaitTask
                 Assert.NotNull(updateResponse)
 
                 // Retrieve and verify
                 let! getResponse =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Equals, uniqueName)
                         .Get()
                     |> Async.AwaitTask
@@ -254,22 +347,20 @@ let ``Deleting item removes it from database`` (name: string) (value: int) =
             let item = createTestItem uniqueName value true
 
             try
-                let table = Supabase.from<TestItem> client
-
                 // Insert item
-                let! insertResponse = table.Insert(item) |> Async.AwaitTask
+                let! insertResponse = (getTestItemTable client).Insert(item) |> Async.AwaitTask
                 Assert.NotNull(insertResponse)
 
                 // Delete item
                 let! _ =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Equals, uniqueName)
                         .Delete()
                     |> Async.AwaitTask
 
                 // Try to retrieve - should be empty
                 let! getResponse =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Equals, uniqueName)
                         .Get()
                     |> Async.AwaitTask
@@ -303,20 +394,18 @@ let ``Filtering by value returns only matching items`` (targetValue: int) =
             ]
 
             try
-                let table = Supabase.from<TestItem> client
-
                 // Insert test items
                 let item1 = createTestItem names.[0] targetValue true
                 let item2 = createTestItem names.[1] targetValue false
                 let item3 = createTestItem names.[2] (targetValue + 1) true
 
-                let! _ = table.Insert(item1) |> Async.AwaitTask
-                let! _ = table.Insert(item2) |> Async.AwaitTask
-                let! _ = table.Insert(item3) |> Async.AwaitTask
+                let! _ = (getTestItemTable client).Insert(item1) |> Async.AwaitTask
+                let! _ = (getTestItemTable client).Insert(item2) |> Async.AwaitTask
+                let! _ = (getTestItemTable client).Insert(item3) |> Async.AwaitTask
 
                 // Query items with targetValue
                 let! response =
-                    table
+                    (getTestItemTable client)
                         .Filter("value", Supabase.Postgrest.Constants.Operator.Equals, targetValue)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Like, sprintf "%s_match*" baseName)
                         .Get()
@@ -354,14 +443,12 @@ let ``Querying same filter multiple times returns consistent results`` (value: i
             let item = createTestItem uniqueName value true
 
             try
-                let table = Supabase.from<TestItem> client
-
                 // Insert item
-                let! _ = table.Insert(item) |> Async.AwaitTask
+                let! _ = (getTestItemTable client).Insert(item) |> Async.AwaitTask
 
                 // Query multiple times
                 let query() =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Equals, uniqueName)
                         .Get()
                     |> Async.AwaitTask
@@ -395,7 +482,7 @@ let ``Querying same filter multiple times returns consistent results`` (value: i
 let ``Multiple concurrent inserts complete successfully`` () =
     match getSupabaseClient() with
     | None ->
-        Assert.True(true, "Skipped: SUPABASE_TEST_URL or SUPABASE_TEST_SERVICE_ROLE_KEY not set")
+        Assert.True(true, "Skipped: SUPABASE_URL or SUPABASE_KEY not set")
     | Some client ->
         async {
             do! ensureInitialized client
@@ -404,15 +491,13 @@ let ``Multiple concurrent inserts complete successfully`` () =
             let names = [1..5] |> List.map (fun i -> sprintf "%s_%d" baseName i)
 
             try
-                let table = Supabase.from<TestItem> client
-
                 // Create multiple insert operations
                 let insertOps =
                     names
                     |> List.mapi (fun i name ->
                         async {
                             let item = createTestItem name (i * 10) true
-                            let! _ = table.Insert(item) |> Async.AwaitTask
+                            let! _ = (getTestItemTable client).Insert(item) |> Async.AwaitTask
                             return ()
                         }
                     )
@@ -422,7 +507,7 @@ let ``Multiple concurrent inserts complete successfully`` () =
 
                 // Verify all items were inserted
                 let! response =
-                    table
+                    (getTestItemTable client)
                         .Filter("name", Supabase.Postgrest.Constants.Operator.Like, sprintf "%s*" baseName)
                         .Get()
                     |> Async.AwaitTask

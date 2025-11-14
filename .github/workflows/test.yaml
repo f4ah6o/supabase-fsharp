@@ -29,28 +29,15 @@ jobs:
       - name: Get Supabase credentials
         id: supabase-creds
         run: |
-          echo "SUPABASE_TEST_URL=$(supabase status -o env | grep API_URL | cut -d '=' -f 2)" >> $GITHUB_ENV
-          echo "SUPABASE_TEST_SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2)" >> $GITHUB_ENV
+          SUPABASE_STATUS=$(supabase status -o env)
+          SUPABASE_URL=$(echo "$SUPABASE_STATUS" | awk -F '=' '/API_URL/ {gsub(/"/, "", $2); print $2}')
+          SUPABASE_KEY=$(echo "$SUPABASE_STATUS" | awk -F '=' '/SERVICE_ROLE_KEY/ {gsub(/"/, "", $2); print $2}')
 
-      - name: Setup test database schema
-        run: |
-          # Create test_items table for integration tests
-          supabase db execute "
-            CREATE TABLE IF NOT EXISTS test_items (
-              id SERIAL PRIMARY KEY,
-              name TEXT NOT NULL,
-              value INTEGER NOT NULL DEFAULT 0,
-              is_active BOOLEAN NOT NULL DEFAULT false,
-              created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            );
+          echo "SUPABASE_URL=${SUPABASE_URL}" >> "$GITHUB_ENV"
+          echo "SUPABASE_KEY=${SUPABASE_KEY}" >> "$GITHUB_ENV"
 
-            -- Enable RLS but allow all operations for testing
-            ALTER TABLE test_items ENABLE ROW LEVEL SECURITY;
-            CREATE POLICY IF NOT EXISTS \"Allow all operations for service role\"
-              ON test_items FOR ALL
-              USING (true)
-              WITH CHECK (true);
-          "
+      - name: Apply Supabase migrations
+        run: supabase migration up --local --yes
 
       - name: Restore dependencies
         run: dotnet restore
@@ -63,5 +50,5 @@ jobs:
       - name: Test
         run: dotnet test Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj --configuration Release --no-restore
         env:
-          SUPABASE_TEST_URL: ${{ env.SUPABASE_TEST_URL }}
-          SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ env.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ env.SUPABASE_KEY }}
