@@ -14,6 +14,7 @@
         <Compile Include="OptionExtensionsPropertyTests.fs" />
         <Compile Include="SupabaseBuilderTests.fs" />
         <Compile Include="SupabaseModuleTests.fs" />
+        <Compile Include="SupabaseIntegrationPropertyTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
