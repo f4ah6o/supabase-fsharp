@@ -37,6 +37,9 @@ type TestItem() =
 // Test Helpers
 // ==============================================
 
+let private supabaseUrlVar = "SUPABASE_URL"
+let private supabaseKeyVar = "SUPABASE_KEY"
+
 /// Lazily locate the repository root that contains the Supabase config
 let private supabaseWorkdir =
     let rec tryFindSupabaseRoot (dir: DirectoryInfo) =
@@ -94,8 +97,8 @@ let private tryPopulateEnvFromSupabaseCli() =
 
         match tryExtract "API_URL", tryExtract "SERVICE_ROLE_KEY" with
         | Some url, Some key ->
-            Environment.SetEnvironmentVariable("SUPABASE_TEST_URL", url)
-            Environment.SetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY", key)
+            Environment.SetEnvironmentVariable(supabaseUrlVar, url)
+            Environment.SetEnvironmentVariable(supabaseKeyVar, key)
             true
         | _ -> false
     | _ -> false
@@ -107,16 +110,16 @@ let private ensureLocalSchema() =
 
 let private supabaseSetup =
     lazy (
-        let url = Environment.GetEnvironmentVariable("SUPABASE_TEST_URL")
-        let key = Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY")
+        let url = Environment.GetEnvironmentVariable(supabaseUrlVar)
+        let key = Environment.GetEnvironmentVariable(supabaseKeyVar)
         let loadedFromCli =
             if String.IsNullOrEmpty(url) || String.IsNullOrEmpty(key) then
                 tryPopulateEnvFromSupabaseCli()
             else
                 false
 
-        let finalUrl = Environment.GetEnvironmentVariable("SUPABASE_TEST_URL")
-        let finalKey = Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY")
+        let finalUrl = Environment.GetEnvironmentVariable(supabaseUrlVar)
+        let finalKey = Environment.GetEnvironmentVariable(supabaseKeyVar)
         if String.IsNullOrEmpty(finalUrl) || String.IsNullOrEmpty(finalKey) then
             false
         else if loadedFromCli then
@@ -127,14 +130,14 @@ let private supabaseSetup =
 
 /// Get Supabase client from environment variables or Supabase CLI
 let getSupabaseClient() =
-    let url = Environment.GetEnvironmentVariable("SUPABASE_TEST_URL")
-    let key = Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY")
+    let url = Environment.GetEnvironmentVariable(supabaseUrlVar)
+    let key = Environment.GetEnvironmentVariable(supabaseKeyVar)
 
     let url, key =
         if String.IsNullOrEmpty(url) || String.IsNullOrEmpty(key) then
             let _ = supabaseSetup.Value
-            Environment.GetEnvironmentVariable("SUPABASE_TEST_URL"),
-            Environment.GetEnvironmentVariable("SUPABASE_TEST_SERVICE_ROLE_KEY")
+            Environment.GetEnvironmentVariable(supabaseUrlVar),
+            Environment.GetEnvironmentVariable(supabaseKeyVar)
         else
             url, key
 
@@ -210,7 +213,7 @@ let ``Client creation with valid credentials returns initialized client`` () =
     match getSupabaseClient() with
     | None ->
         // Skip test if credentials not available
-        Assert.True(true, "Skipped: SUPABASE_TEST_URL or SUPABASE_TEST_SERVICE_ROLE_KEY not set")
+        Assert.True(true, "Skipped: SUPABASE_URL or SUPABASE_KEY not set")
     | Some client ->
         async {
             do! ensureInitialized client
@@ -224,7 +227,7 @@ let ``Client creation with valid credentials returns initialized client`` () =
 let ``Client can be created and initialized multiple times`` () =
     match getSupabaseClient() with
     | None ->
-        Assert.True(true, "Skipped: SUPABASE_TEST_URL or SUPABASE_TEST_SERVICE_ROLE_KEY not set")
+        Assert.True(true, "Skipped: SUPABASE_URL or SUPABASE_KEY not set")
     | Some _ ->
         async {
             // Create and initialize multiple clients
@@ -479,7 +482,7 @@ let ``Querying same filter multiple times returns consistent results`` (value: i
 let ``Multiple concurrent inserts complete successfully`` () =
     match getSupabaseClient() with
     | None ->
-        Assert.True(true, "Skipped: SUPABASE_TEST_URL or SUPABASE_TEST_SERVICE_ROLE_KEY not set")
+        Assert.True(true, "Skipped: SUPABASE_URL or SUPABASE_KEY not set")
     | Some client ->
         async {
             do! ensureInitialized client

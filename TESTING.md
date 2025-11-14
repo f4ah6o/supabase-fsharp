@@ -52,8 +52,8 @@ This document describes how to run tests for the Supabase F# library.
 
 2. **Update .env file**
    ```env
-   SUPABASE_TEST_URL=http://127.0.0.1:54321
-   SUPABASE_TEST_SERVICE_ROLE_KEY=<your-service-role-key-from-supabase-start>
+   SUPABASE_URL=http://127.0.0.1:54321
+   SUPABASE_KEY=<your-service-role-key-from-supabase-start>
    ```
 
 3. **Run Tests**
@@ -80,8 +80,8 @@ This document describes how to run tests for the Supabase F# library.
 
 2. **Update .env file**
    ```env
-   SUPABASE_TEST_URL=https://<project-ref>.supabase.co
-   SUPABASE_TEST_SERVICE_ROLE_KEY=<your-service-role-key>
+   SUPABASE_URL=https://<project-ref>.supabase.co
+   SUPABASE_KEY=<your-service-role-key>
    ```
 
 3. **Run Tests**
@@ -124,8 +124,8 @@ The GitHub Actions workflow:
 No secrets are required for the default workflow as it uses a local Supabase instance. However, if you want to test against a remote Supabase instance:
 
 1. Add these secrets to your repository:
-   - `SUPABASE_TEST_URL`
-   - `SUPABASE_TEST_SERVICE_ROLE_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
 
 2. Update `.github/workflows/test.yaml` to use these secrets instead of local Supabase.
 
@@ -150,7 +150,7 @@ This table is automatically created by:
 ## Troubleshooting
 
 ### Integration tests are skipped
-- **Cause**: Environment variables `SUPABASE_TEST_URL` or `SUPABASE_TEST_SERVICE_ROLE_KEY` are not set
+- **Cause**: Environment variables `SUPABASE_URL` or `SUPABASE_KEY` are not set
 - **Solution**: Ensure `.env` file is properly configured and using `op run --env-file=.env` or export variables manually
 
 ### Tests fail with connection errors

@@ -30,11 +30,11 @@ jobs:
         id: supabase-creds
         run: |
           SUPABASE_STATUS=$(supabase status -o env)
-          SUPABASE_TEST_URL=$(echo "$SUPABASE_STATUS" | awk -F '=' '/API_URL/ {gsub(/"/, "", $2); print $2}')
-          SUPABASE_TEST_SERVICE_ROLE_KEY=$(echo "$SUPABASE_STATUS" | awk -F '=' '/SERVICE_ROLE_KEY/ {gsub(/"/, "", $2); print $2}')
+          SUPABASE_URL=$(echo "$SUPABASE_STATUS" | awk -F '=' '/API_URL/ {gsub(/"/, "", $2); print $2}')
+          SUPABASE_KEY=$(echo "$SUPABASE_STATUS" | awk -F '=' '/SERVICE_ROLE_KEY/ {gsub(/"/, "", $2); print $2}')
 
-          echo "SUPABASE_TEST_URL=${SUPABASE_TEST_URL}" >> "$GITHUB_ENV"
-          echo "SUPABASE_TEST_SERVICE_ROLE_KEY=${SUPABASE_TEST_SERVICE_ROLE_KEY}" >> "$GITHUB_ENV"
+          echo "SUPABASE_URL=${SUPABASE_URL}" >> "$GITHUB_ENV"
+          echo "SUPABASE_KEY=${SUPABASE_KEY}" >> "$GITHUB_ENV"
 
       - name: Apply Supabase migrations
         run: supabase migration up --local --yes
@@ -50,5 +50,5 @@ jobs:
       - name: Test
         run: dotnet test Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj --configuration Release --no-restore
         env:
-          SUPABASE_TEST_URL: ${{ env.SUPABASE_TEST_URL }}
-          SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ env.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ env.SUPABASE_KEY }}

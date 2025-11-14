@@ -21,10 +21,10 @@ if ! supabase status >/dev/null 2>&1; then
 fi
 
 SUPABASE_STATUS=$(supabase status -o env)
-SUPABASE_TEST_URL=$(echo "$SUPABASE_STATUS" | awk -F '=' '/API_URL/ {gsub(/"/, "", $2); print $2}')
-SUPABASE_TEST_SERVICE_ROLE_KEY=$(echo "$SUPABASE_STATUS" | awk -F '=' '/SERVICE_ROLE_KEY/ {gsub(/"/, "", $2); print $2}')
+SUPABASE_URL=$(echo "$SUPABASE_STATUS" | awk -F '=' '/API_URL/ {gsub(/"/, "", $2); print $2}')
+SUPABASE_KEY=$(echo "$SUPABASE_STATUS" | awk -F '=' '/SERVICE_ROLE_KEY/ {gsub(/"/, "", $2); print $2}')
 
-if [[ -z "$SUPABASE_TEST_URL" || -z "$SUPABASE_TEST_SERVICE_ROLE_KEY" ]]; then
+if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_KEY" ]]; then
   echo "[error] Supabase 環境変数を取得できませんでした。supabase status -o env の出力を確認してください。" >&2
   exit 1
 fi
@@ -37,6 +37,6 @@ dotnet build Supabase.FSharp/Supabase.FSharp.fsproj --configuration Release --no
 
 dotnet build Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj --configuration Release --no-restore
 
-SUPABASE_TEST_URL="$SUPABASE_TEST_URL" \
-SUPABASE_TEST_SERVICE_ROLE_KEY="$SUPABASE_TEST_SERVICE_ROLE_KEY" \
+SUPABASE_URL="$SUPABASE_URL" \
+SUPABASE_KEY="$SUPABASE_KEY" \
 dotnet test Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj --configuration Release --no-restore
