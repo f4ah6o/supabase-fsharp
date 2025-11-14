@@ -43,8 +43,8 @@ let endpoints = [
 
 let errorView errorCode (errorText: string) =
     html() {
-        body(style = "width: 800px; margin: 0 auto") {
-            h1(style = "text-align: center; color: red") { raw $"Error <i>%d{errorCode}</i>" }
+        body() {
+            h1() { raw $"Error <i>%d{errorCode}</i>" }
             p() { errorText }
         }
     }
@@ -55,8 +55,8 @@ let notFoundHandler (ctx: HttpContext) =
     ctx.SetStatusCode 404
     ctx.WriteHtmlView(errorView 404 "Page not found!")
 
-let errorHandler (ctx: HttpContext) (next: RequestDelegate) =
-    task {
+let errorHandler (ctx: HttpContext) (next: RequestDelegate) : Task =
+    (task {
         try
             return! next.Invoke(ctx)
         with
@@ -71,7 +71,7 @@ let errorHandler (ctx: HttpContext) (next: RequestDelegate) =
             logger.LogError(ex, "Unhandled 500 error")
             ctx.SetStatusCode StatusCodes.Status500InternalServerError
             return! ctx.WriteHtmlView(errorView 500 (string ex))
-    }
+    } :> Task)
 
 let configureApp (appBuilder: IApplicationBuilder) =
     appBuilder

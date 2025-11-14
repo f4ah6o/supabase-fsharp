@@ -34,7 +34,6 @@ type ContactDTO = {
 [<Table("contacts")>]
 type ContactTable() =
     inherit BaseModel()
-
     [<PrimaryKey("id", false)>]
     member val id = 0 with get, set
     [<Column("first")>]
