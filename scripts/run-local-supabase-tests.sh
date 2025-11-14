@@ -29,7 +29,7 @@ if [[ -z "$SUPABASE_TEST_URL" || -z "$SUPABASE_TEST_SERVICE_ROLE_KEY" ]]; then
   exit 1
 fi
 
-read -r -d '' TEST_SCHEMA_SQL <<'SQL'
+TEST_SCHEMA_SQL=$(cat <<'SQL'
 CREATE TABLE IF NOT EXISTS test_items (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -44,6 +44,7 @@ CREATE POLICY IF NOT EXISTS "Allow all operations for service role"
   USING (true)
   WITH CHECK (true);
 SQL
+)
 
 supabase db execute "$TEST_SCHEMA_SQL" >/dev/null
 
