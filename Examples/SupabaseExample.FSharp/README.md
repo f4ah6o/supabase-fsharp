@@ -1,74 +1,74 @@
 # Supabase F# Example
 
-このプロジェクトは、Supabase.FSharpライブラリの包括的な使用例を提供します。F#特有の機能を活用したSupabaseの各種操作方法を実演します。
+This project provides comprehensive usage examples of the Supabase.FSharp library, demonstrating various Supabase operations using F#-specific features.
 
-## 概要
+## Overview
 
-このサンプルでは、以下のSupabase機能の使い方を示しています:
+This sample demonstrates how to use the following Supabase features:
 
-1. **クライアント作成と初期化** - Computation Expressionを使用した設定
-2. **認証 (Authentication)** - サインアップ、サインアウト、ユーザー管理
-3. **データベース操作** - PostgRESTを使用したCRUD操作
-4. **リアルタイム (Realtime)** - WebSocketによるリアルタイム通信
-5. **ストレージ (Storage)** - ファイルのアップロード・ダウンロード
-6. **RPC (Remote Procedure Call)** - データベース関数の呼び出し
-7. **Computation Expressions** - F#の計算式を使用したワークフロー
-8. **パイプライン形式** - F#のパイプライン演算子を活用した操作
+1. **Client Creation and Initialization** - Configuration using Computation Expressions
+2. **Authentication** - Sign up, sign out, and user management
+3. **Database Operations** - CRUD operations using PostgREST
+4. **Realtime** - Real-time communication via WebSockets
+5. **Storage** - File upload and download
+6. **RPC (Remote Procedure Call)** - Calling database functions
+7. **Computation Expressions** - Workflows using F# computation expressions
+8. **Pipeline Style** - Operations leveraging F# pipeline operators
 
-## 必要な環境
+## Requirements
 
-- .NET 9.0以降
-- F# 9.0以降
-- アクティブなSupabaseプロジェクト
+- .NET 9.0 or later
+- F# 9.0 or later
+- Active Supabase project
 
-## Supabase プロジェクトのセットアップ
+## Supabase Project Setup
 
-このサンプルを実行する前に、Supabaseプロジェクトで以下の設定を行ってください。
+Before running this sample, you need to configure your Supabase project as follows:
 
-### 1. Supabaseプロジェクトの作成
+### 1. Create a Supabase Project
 
-1. [Supabase](https://supabase.com/)にアクセスしてアカウントを作成
-2. 新しいプロジェクトを作成
-3. プロジェクトのURLとAPI Keyを取得
-   - Dashboard > Settings > API から以下を確認:
-     - `Project URL` (例: `https://xxxxx.supabase.co`)
-     - `anon/public` key (匿名アクセス用のAPIキー)
+1. Go to [Supabase](https://supabase.com/) and create an account
+2. Create a new project
+3. Get your Project URL and API Key
+   - Navigate to Dashboard > Settings > API and note:
+     - `Project URL` (e.g., `https://xxxxx.supabase.co`)
+     - `anon/public` key (API key for anonymous access)
 
-### 2. データベーステーブルの作成
+### 2. Create Database Tables
 
-以下のSQLをSupabaseのSQL Editorで実行してください:
+Execute the following SQL in the Supabase SQL Editor:
 
-#### Movies テーブル
+#### Movies Table
 
 ```sql
--- Movies テーブルの作成
+-- Create movies table
 CREATE TABLE movies (
     id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Row Level Security (RLS) の有効化
+-- Enable Row Level Security (RLS)
 ALTER TABLE movies ENABLE ROW LEVEL SECURITY;
 
--- 匿名ユーザーに読み取り権限を付与
+-- Grant read access to anonymous users
 CREATE POLICY "Allow anonymous read access"
 ON movies
 FOR SELECT
 TO anon
 USING (true);
 
--- サンプルデータの挿入
+-- Insert sample data
 INSERT INTO movies (name) VALUES
     ('The Matrix'),
     ('Inception'),
     ('Interstellar');
 ```
 
-#### Users テーブル
+#### Users Table
 
 ```sql
--- Users テーブルの作成
+-- Create users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username TEXT UNIQUE NOT NULL,
@@ -76,17 +76,17 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Row Level Security (RLS) の有効化
+-- Enable Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- ユーザーは自分のデータのみ読み取り可能
+-- Users can read their own data
 CREATE POLICY "Users can read own data"
 ON users
 FOR SELECT
 TO authenticated
 USING (auth.uid() = id);
 
--- ユーザーは自分のデータのみ更新可能
+-- Users can update their own data
 CREATE POLICY "Users can update own data"
 ON users
 FOR UPDATE
@@ -94,23 +94,23 @@ TO authenticated
 USING (auth.uid() = id);
 ```
 
-### 3. Storageバケットの作成（オプション）
+### 3. Create Storage Bucket (Optional)
 
-ストレージ機能を使用する場合:
+If you want to use the storage features:
 
-1. Supabase Dashboard > Storage
-2. 「Create a new bucket」をクリック
-3. バケット名を `test-bucket` として作成
-4. バケットのポリシー設定:
-   - Public bucket: ON (パブリックアクセスを許可する場合)
-   - または、適切なRow Level Securityポリシーを設定
+1. Go to Supabase Dashboard > Storage
+2. Click "Create a new bucket"
+3. Create a bucket named `test-bucket`
+4. Configure bucket policy:
+   - Public bucket: ON (if you want to allow public access)
+   - Or set appropriate Row Level Security policies
 
-### 4. RPC関数の作成（オプション）
+### 4. Create RPC Function (Optional)
 
-RPC機能を使用する場合、以下のSQL関数を作成:
+To use the RPC feature, create the following SQL function:
 
 ```sql
--- サンプルRPC関数
+-- Sample RPC function
 CREATE OR REPLACE FUNCTION hello_world(name TEXT)
 RETURNS JSON AS $$
 BEGIN
@@ -121,26 +121,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 匿名ユーザーに実行権限を付与
+-- Grant execute permission to anonymous users
 GRANT EXECUTE ON FUNCTION hello_world(TEXT) TO anon;
 ```
 
-### 5. 認証設定
+### 5. Authentication Settings
 
-1. Supabase Dashboard > Authentication > Settings
-2. 「Enable Email Confirmations」を無効化（開発環境の場合）
-   - これにより、メール確認なしでユーザー登録が可能になります
-3. 本番環境では、適切な認証設定とメール確認を有効化してください
+1. Go to Supabase Dashboard > Authentication > Settings
+2. Disable "Enable Email Confirmations" (for development environment)
+   - This allows user registration without email confirmation
+3. For production, enable proper authentication settings and email confirmation
 
-### 6. Realtimeの有効化
+### 6. Enable Realtime
 
-1. Supabase Dashboard > Database > Replication
-2. `movies` テーブルに対してRealtimeを有効化
-   - テーブルを選択 > 「Enable Realtime」をON
+1. Go to Supabase Dashboard > Database > Replication
+2. Enable Realtime for the `movies` table
+   - Select the table > Turn "Enable Realtime" ON
 
-## 環境変数の設定
+## Environment Variables
 
-以下の環境変数を設定してください:
+Set the following environment variables:
 
 ```bash
 export SUPABASE_URL="https://your-project.supabase.co"
@@ -154,55 +154,55 @@ $env:SUPABASE_URL="https://your-project.supabase.co"
 $env:SUPABASE_KEY="your-anon-key"
 ```
 
-### Windows (コマンドプロンプト)
+### Windows (Command Prompt)
 
 ```cmd
 set SUPABASE_URL=https://your-project.supabase.co
 set SUPABASE_KEY=your-anon-key
 ```
 
-### .envファイルを使用する場合
+### Using .env File
 
-プロジェクトルートに `.env` ファイルを作成:
+Create a `.env` file in the project root:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-key
 ```
 
-注: `.env` ファイルを使用する場合は、実行前に環境変数を読み込む必要があります。
+Note: If using a `.env` file, you need to load the environment variables before running.
 
-## プロジェクトのビルドと実行
+## Building and Running
 
-### 1. 依存関係の復元
+### 1. Restore Dependencies
 
 ```bash
 dotnet restore
 ```
 
-### 2. プロジェクトのビルド
+### 2. Build the Project
 
 ```bash
 dotnet build
 ```
 
-### 3. 実行
+### 3. Run
 
 ```bash
 dotnet run
 ```
 
-または、プロジェクトのルートディレクトリから:
+Or from the project root directory:
 
 ```bash
 dotnet run --project Examples/SupabaseExample.FSharp/SupabaseExample.FSharp.fsproj
 ```
 
-## サンプルコードの説明
+## Sample Code Explanations
 
-### Example 1: クライアントの作成と初期化
+### Example 1: Client Creation and Initialization
 
-Computation Expressionを使用してSupabaseクライアントを設定し、初期化する方法を示します。
+Demonstrates how to configure and initialize a Supabase client using Computation Expressions.
 
 ```fsharp
 let options =
@@ -213,102 +213,102 @@ let options =
     }
 ```
 
-**ポイント:**
-- F#特有の`supabaseOptions` Computation Expressionを使用
-- 環境変数から接続情報を取得
-- F# Option型を使用した安全なNull処理
+**Key Points:**
+- Uses F#-specific `supabaseOptions` Computation Expression
+- Retrieves connection info from environment variables
+- Safe null handling using F# Option types
 
-### Example 2: 認証 (Authentication)
+### Example 2: Authentication
 
-ユーザーのサインアップ、ログイン、サインアウトの実装例です。
+Implementation example of user sign up, login, and sign out.
 
 ```fsharp
 let! signUpResponse = Auth.signUp email password client
 match Auth.currentUser client with
-| Some user -> // ユーザーが存在する場合
-| None -> // ユーザーが存在しない場合
+| Some user -> // User exists
+| None -> // No user
 ```
 
-**ポイント:**
-- F# Async workflowsを使用
-- Option型による安全なユーザー情報の取得
-- `EmailOption` など、null許容型をOptionに変換
+**Key Points:**
+- Uses F# Async workflows
+- Safe user info retrieval with Option types
+- Converts nullable types to Options like `EmailOption`
 
-### Example 3: データベース操作
+### Example 3: Database Operations
 
-PostgRESTを使用したデータベースのクエリ操作です。
+Query operations using PostgREST.
 
 ```fsharp
 let moviesTable = Supabase.from<Movie> client
 let! response = moviesTable.Get() |> Async.AwaitTask
 ```
 
-**ポイント:**
-- 型安全なモデル定義（`Movie` 型）
-- TaskからF# Asyncへの変換
-- LINQ風のクエリインターフェース
+**Key Points:**
+- Type-safe model definition (`Movie` type)
+- Conversion from Task to F# Async
+- LINQ-style query interface
 
 ### Example 4: Realtime
 
-WebSocketを使用したリアルタイム通信の実装です。
+Real-time communication using WebSockets.
 
 ```fsharp
 do! Realtime.connect client
 let channel = Realtime.channel "public:movies" client
 ```
 
-**ポイント:**
-- F# Asyncを使用した接続管理
-- チャンネルベースのサブスクリプション
+**Key Points:**
+- Connection management using F# Async
+- Channel-based subscription
 
 ### Example 5: Storage
 
-ファイルのアップロード、ダウンロード、削除などのストレージ操作です。
+Storage operations including file upload, download, and deletion.
 
 ```fsharp
 let! uploadResult = Storage.upload bucketId filePath fileContent client
 let publicUrl = Storage.publicUrl bucketId filePath client
 ```
 
-**ポイント:**
-- バイナリデータの扱い
-- パブリックURLの生成
-- ファイルのリスト取得
+**Key Points:**
+- Handling binary data
+- Generating public URLs
+- Retrieving file lists
 
 ### Example 6: RPC (Remote Procedure Call)
 
-PostgreSQLの関数をリモートから呼び出す方法です。
+How to remotely call PostgreSQL functions.
 
 ```fsharp
 let parameters = {| name = "F# Developer" |}
 let! result = Supabase.rpc procedureName parameters client
 ```
 
-**ポイント:**
-- 匿名レコードを使用したパラメータ渡し
-- データベース関数の実行
+**Key Points:**
+- Passing parameters using anonymous records
+- Executing database functions
 
 ### Example 7: Computation Expressions
 
-F#の計算式を使用したワークフロー構築です。
+Building workflows using F# computation expressions.
 
 ```fsharp
 let! result =
     auth {
         let! session = Auth.retrieveSession client
-        // ワークフロー処理
+        // Workflow processing
         return Ok "Authenticated"
     }
 ```
 
-**ポイント:**
+**Key Points:**
 - `auth` Computation Expression
-- Result型を使用したエラーハンドリング
-- F#らしい関数型プログラミング
+- Error handling using Result types
+- F#-idiomatic functional programming
 
-### Example 8: パイプライン形式
+### Example 8: Pipeline Style
 
-F#のパイプライン演算子を活用した操作です。
+Operations leveraging F# pipeline operators.
 
 ```fsharp
 let session =
@@ -317,67 +317,67 @@ let session =
     |> Option.defaultWith (fun () -> null)
 ```
 
-**ポイント:**
-- パイプライン演算子 `|>` を使用
-- 関数型スタイルのデータ変換
-- Optionモジュールの関数との組み合わせ
+**Key Points:**
+- Uses pipeline operator `|>`
+- Functional-style data transformation
+- Combination with Option module functions
 
-## トラブルシューティング
+## Troubleshooting
 
-### 認証エラー
+### Authentication Error
 
 ```
 Authentication error: Invalid credentials
 ```
 
-**解決方法:**
-- Supabaseプロジェクトで「Enable Email Confirmations」が無効化されているか確認
-- メールアドレスとパスワードが要件を満たしているか確認（パスワードは最低6文字）
+**Solution:**
+- Verify "Enable Email Confirmations" is disabled in your Supabase project
+- Ensure email and password meet requirements (password minimum 6 characters)
 
-### データベース接続エラー
+### Database Connection Error
 
 ```
 Database error: relation "movies" does not exist
 ```
 
-**解決方法:**
-- `movies` テーブルが作成されているか確認
-- テーブル名が正確か確認（小文字・複数形）
-- Row Level Security (RLS) ポリシーが正しく設定されているか確認
+**Solution:**
+- Verify the `movies` table is created
+- Check table name is correct (lowercase, plural)
+- Verify Row Level Security (RLS) policies are correctly configured
 
-### ストレージエラー
+### Storage Error
 
 ```
 Storage error: Bucket not found
 ```
 
-**解決方法:**
-- Supabase Dashboardで `test-bucket` が作成されているか確認
-- バケットのアクセス権限設定を確認
+**Solution:**
+- Verify `test-bucket` is created in Supabase Dashboard
+- Check bucket access permission settings
 
-### Realtimeエラー
+### Realtime Error
 
 ```
 Realtime error: Connection failed
 ```
 
-**解決方法:**
-- Supabaseプロジェクトでテーブルに対してRealtimeが有効化されているか確認
-- WebSocket接続がファイアウォールでブロックされていないか確認
+**Solution:**
+- Verify Realtime is enabled for the table in your Supabase project
+- Check WebSocket connections are not blocked by firewall
 
-### 環境変数が設定されていない
+### Environment Variables Not Set
 
 ```
 SUPABASE_URL and SUPABASE_KEY environment variables must be set
 ```
 
-**解決方法:**
-- 環境変数が正しく設定されているか確認
-- 同じターミナルセッションで環境変数を設定してから実行
+**Solution:**
+- Verify environment variables are correctly set
+- Set environment variables in the same terminal session before running
 
-## モデル定義
+## Model Definitions
 
-### Movie モデル
+### Movie Model
 
 ```fsharp
 [<Table("movies")>]
@@ -394,7 +394,7 @@ type Movie() =
     member val CreatedAt = System.DateTime.MinValue with get, set
 ```
 
-### UserProfile モデル
+### UserProfile Model
 
 ```fsharp
 [<Table("users")>]
@@ -414,19 +414,24 @@ type UserProfile() =
     member val CreatedAt = System.DateTime.MinValue with get, set
 ```
 
-## 参考資料
+## References
 
-- [Supabase公式ドキュメント](https://supabase.com/docs)
-- [Supabase C# クライアント](https://github.com/supabase-community/supabase-csharp)
-- [Supabase.FSharp ライブラリ](../../README.md)
-- [F# ドキュメント](https://learn.microsoft.com/ja-jp/dotnet/fsharp/)
+- [Supabase Official Documentation](https://supabase.com/docs)
+- [Supabase C# Client](https://github.com/supabase-community/supabase-csharp)
+- [Supabase.FSharp Library](../../README.md)
+- [F# Documentation](https://learn.microsoft.com/en-us/dotnet/fsharp/)
 
-## ライセンス
+## Language
 
-このサンプルコードはMITライセンスの下で提供されています。
+This README is available in multiple languages:
+- [日本語 (Japanese)](README.ja.md)
 
-## 次のステップ
+## License
 
-- より複雑な実例については [ContactApp](../ContactApp) を参照
-- 本番環境での使用時は、適切な認証・認可設定を行ってください
-- Row Level Security (RLS) ポリシーを本番環境に合わせて調整してください
+This sample code is provided under the MIT License.
+
+## Next Steps
+
+- For more complex examples, see [ContactApp](../ContactApp)
+- For production use, configure appropriate authentication and authorization settings
+- Adjust Row Level Security (RLS) policies to match your production requirements
