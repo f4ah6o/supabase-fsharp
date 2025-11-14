@@ -29,8 +29,12 @@ jobs:
       - name: Get Supabase credentials
         id: supabase-creds
         run: |
-          echo "SUPABASE_TEST_URL=$(supabase status -o env | grep API_URL | cut -d '=' -f 2)" >> $GITHUB_ENV
-          echo "SUPABASE_TEST_SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2)" >> $GITHUB_ENV
+          SUPABASE_STATUS=$(supabase status -o env)
+          SUPABASE_TEST_URL=$(echo "$SUPABASE_STATUS" | awk -F '=' '/API_URL/ {gsub(/"/, "", $2); print $2}')
+          SUPABASE_TEST_SERVICE_ROLE_KEY=$(echo "$SUPABASE_STATUS" | awk -F '=' '/SERVICE_ROLE_KEY/ {gsub(/"/, "", $2); print $2}')
+
+          echo "SUPABASE_TEST_URL=${SUPABASE_TEST_URL}" >> "$GITHUB_ENV"
+          echo "SUPABASE_TEST_SERVICE_ROLE_KEY=${SUPABASE_TEST_SERVICE_ROLE_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup test database schema
         run: |
