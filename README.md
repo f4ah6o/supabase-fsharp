@@ -332,6 +332,21 @@ See the [Examples](Examples/) folder for complete working examples:
 - **[SupabaseExample.FSharp](Examples/SupabaseExample.FSharp)** - Comprehensive examples of all features
 - **[ContactApp](Examples/ContactApp)** - Real-world CRUD application using Oxpecker web framework
 
+## Test Loadmap
+
+The CI (and `dotnet test`) already runs a Supabase-backed property test suite in `SupabaseIntegrationPropertyTests.fs`. We track further PBT expansion here:
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| CRUD round-trip (insert/update/delete/query) | ✅ implemented | Covers scalar columns and basic filters, cleans up created rows. |
+| Concurrent insert/idempotent query | ✅ implemented | Ensures same query returns consistent result counts and concurrent inserts succeed. |
+| Rich data types (JSON/arrays/storage references) | 🔜 planned | Add properties that round-trip complex payloads to catch serialization regressions. |
+| Authorization / RLS policies | 🔜 planned | Spin up alternative roles/headers to verify policies accept/deny requests as expected. |
+| Realtime + RPC behaviours | 🔜 planned | Property tests for channel subscription lifecycle and RPC responses. |
+| Command-based state transitions | 🔜 planned | Use FsCheck command model to mix insert/update/delete actions randomly and assert invariants. |
+
+Contributions are welcome—feel free to send PRs that implement any "planned" item above or propose new properties.
+
 ## Requirements
 
 - .NET 9.0 or later
