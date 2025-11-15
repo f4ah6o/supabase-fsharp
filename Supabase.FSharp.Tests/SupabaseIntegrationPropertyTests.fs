@@ -82,9 +82,19 @@ let private runSupabaseCommand (arguments: string) =
         with
         | _ -> None
 
-let private tryPopulateEnvFromSupabaseCli() =
+let rec private tryFetchSupabaseStatus attempt =
     match runSupabaseCommand "status -o env" with
-    | Some (0, output, _) ->
+    | Some (0, output, _) when output.Contains("API_URL") && output.Contains("SERVICE_ROLE_KEY") -> Some output
+    | _ when attempt = 0 ->
+        printfn "Supabase not running. Starting local Supabase stack..."
+        match runSupabaseCommand "start" with
+        | Some (0, _, _) -> tryFetchSupabaseStatus (attempt + 1)
+        | _ -> None
+    | _ -> None
+
+let private tryPopulateEnvFromSupabaseCli() =
+    match tryFetchSupabaseStatus 0 with
+    | Some output ->
         let tryExtract key =
             output.Split(Environment.NewLine)
             |> Array.tryPick (fun line ->
@@ -101,7 +111,7 @@ let private tryPopulateEnvFromSupabaseCli() =
             Environment.SetEnvironmentVariable(supabaseKeyVar, key)
             true
         | _ -> false
-    | _ -> false
+    | None -> false
 
 let private ensureLocalSchema() =
     match runSupabaseCommand "migration up --local --yes" with

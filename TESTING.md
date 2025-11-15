@@ -58,19 +58,9 @@ This document describes how to run tests for the Supabase F# library.
 
 3. **Run Tests**
 
-   - Supabase CLI (`supabase start` 済み) が使える環境では、単純に `dotnet test` を実行するだけで OK です。環境変数が未設定の場合はテストコード内で `supabase status -o env` と `supabase migration up --local --yes` を呼び出して補完します。
+   - Supabase CLI がインストールされていれば、`dotnet test Supabase.FSharp.Tests/Supabase.FSharp.Tests.fsproj` だけで OK です。環境変数が未設定かつ Supabase が起動していない場合でも、テスト側で `supabase start` / `supabase migration up --local --yes` / `supabase status -o env` を自動実行します。
 
-   - 既存の `.env` を使いたい場合は、従来どおり `op run --env-file=.env -- dotnet test` や `export ... && dotnet test` でも動きます。
-
-4. **CI と同じ流れをまとめて実行したい場合**
-
-   Supabase を `supabase start` で起動した後、以下のスクリプトでスキーマ作成～テスト実行までを自動化できます:
-
-   ```bash
-   ./scripts/run-local-supabase-tests.sh
-   ```
-
-   このスクリプトは GitHub Actions と同じように `supabase migration up --local --yes` を実行した後、`supabase status -o env` から取得した URL/Key を使って `dotnet test` を実行します。
+   - 既存の `.env` (例: リモート環境) を使いたい場合は、従来どおり `op run --env-file=.env -- dotnet test` や `export ... && dotnet test` を使って手動で上書きできます。
 
 ### Option 2: Running with Remote Supabase
 
